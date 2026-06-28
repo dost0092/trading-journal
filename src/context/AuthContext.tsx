@@ -9,7 +9,11 @@ import {
 } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import {
-  isProfileApproved,
+  buildProfileFromUser,
+  resolveIsApproved,
+  resolveIsSuperAdmin,
+} from '@/lib/authUtils'
+import {
   isSupabaseConfigured,
   supabase,
   type UserProfile,
@@ -26,11 +30,13 @@ interface AuthContextValue {
   isSuperAdmin: boolean
   isApproved: boolean
   loading: boolean
+  profileError: string | null
   signUp: (email: string, password: string, fullName: string) => Promise<string | null>
   signIn: (email: string, password: string) => Promise<string | null>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
-  fetchAllUsers: () => Promise<UserProfile[]>
+  updateProfileName: (fullName: string) => Promise<string | null>
+  fetchAllUsers: () => Promise<{ users: UserProfile[]; error: string | null }>
   updateUserStatus: (userId: string, status: UserStatus) => Promise<string | null>
 }
 
@@ -38,33 +44,50 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 const PROFILE_FIELDS = 'id, email, full_name, role, status, created_at'
 
-async function fetchProfile(userId: string): Promise<UserProfile | null> {
-  if (!supabase) return null
+async function loadUserProfile(user: User): Promise<{
+  profile: UserProfile | null
+  error: string | null
+}> {
+  if (!supabase) return { profile: buildProfileFromUser(user), error: null }
+
+  const { data: ensured, error: rpcError } = await supabase.rpc('ensure_user_profile')
+
+  if (ensured && !rpcError) {
+    return { profile: ensured as UserProfile, error: null }
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .select(PROFILE_FIELDS)
-    .eq('id', userId)
-    .single()
+    .eq('id', user.id)
+    .maybeSingle()
 
-  if (error || !data) return null
-  return data as UserProfile
+  if (data) return { profile: data as UserProfile, error: null }
+
+  if (error) {
+    return { profile: buildProfileFromUser(user), error: error.message }
+  }
+
+  return { profile: buildProfileFromUser(user), error: rpcError?.message ?? null }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [profileError, setProfileError] = useState<string | null>(null)
   const [loading, setLoading] = useState(isSupabaseConfigured)
 
-  const loadProfile = useCallback(async (userId: string) => {
-    const p = await fetchProfile(userId)
-    setProfile(p)
-    return p
+  const syncProfile = useCallback(async (user: User) => {
+    const { profile: nextProfile, error } = await loadUserProfile(user)
+    setProfile(nextProfile)
+    setProfileError(error)
+    return nextProfile
   }, [])
 
   const refreshProfile = useCallback(async () => {
     if (!session?.user) return
-    await loadProfile(session.user.id)
-  }, [session?.user, loadProfile])
+    await syncProfile(session.user)
+  }, [session?.user, syncProfile])
 
   useEffect(() => {
     if (!supabase) {
@@ -75,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       if (data.session?.user) {
-        loadProfile(data.session.user.id).finally(() => setLoading(false))
+        syncProfile(data.session.user).finally(() => setLoading(false))
       } else {
         setLoading(false)
       }
@@ -86,14 +109,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession)
       if (nextSession?.user) {
-        loadProfile(nextSession.user.id)
+        syncProfile(nextSession.user)
       } else {
         setProfile(null)
+        setProfileError(null)
       }
     })
 
     return () => subscription.unsubscribe()
-  }, [loadProfile])
+  }, [syncProfile])
 
   const signUp = useCallback(
     async (email: string, password: string, fullName: string) => {
@@ -118,17 +142,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return
     await supabase.auth.signOut()
     setProfile(null)
+    setProfileError(null)
   }, [])
 
+  const updateProfileName = useCallback(
+    async (fullName: string) => {
+      if (!supabase || !session?.user) return 'Not signed in.'
+      const trimmed = fullName.trim()
+      if (!trimmed) return 'Name is required.'
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: trimmed })
+        .eq('id', session.user.id)
+
+      if (error) return error.message
+
+      await syncProfile(session.user)
+      return null
+    },
+    [session?.user, syncProfile],
+  )
+
   const fetchAllUsers = useCallback(async () => {
-    if (!supabase) return []
+    if (!supabase) return { users: [], error: 'Supabase is not configured.' }
+
     const { data, error } = await supabase
       .from('profiles')
       .select(PROFILE_FIELDS)
       .order('created_at', { ascending: false })
 
-    if (error) return []
-    return (data ?? []) as UserProfile[]
+    if (error) return { users: [], error: error.message }
+    return { users: (data ?? []) as UserProfile[], error: null }
   }, [])
 
   const updateUserStatus = useCallback(async (userId: string, status: UserStatus) => {
@@ -137,9 +182,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error?.message ?? null
   }, [])
 
-  const role: UserRole = profile?.role ?? 'user'
-  const status: UserStatus = profile?.status ?? 'pending'
-  const isApproved = isProfileApproved(profile)
+  const userEmail = profile?.email ?? session?.user?.email ?? null
+  const isSuperAdmin = resolveIsSuperAdmin(profile, userEmail)
+  const isApproved = resolveIsApproved(profile, userEmail)
+  const role: UserRole = isSuperAdmin ? 'superadmin' : (profile?.role ?? 'user')
+  const status: UserStatus = isSuperAdmin ? 'approved' : (profile?.status ?? 'pending')
 
   const value = useMemo(
     () => ({
@@ -148,13 +195,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       role,
       status,
-      isSuperAdmin: role === 'superadmin',
+      isSuperAdmin,
       isApproved,
       loading,
+      profileError,
       signUp,
       signIn,
       signOut,
       refreshProfile,
+      updateProfileName,
       fetchAllUsers,
       updateUserStatus,
     }),
@@ -163,12 +212,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       role,
       status,
+      isSuperAdmin,
       isApproved,
       loading,
+      profileError,
       signUp,
       signIn,
       signOut,
       refreshProfile,
+      updateProfileName,
       fetchAllUsers,
       updateUserStatus,
     ],

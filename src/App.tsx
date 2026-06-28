@@ -5,7 +5,7 @@ import {
   PendingRoute,
   ProtectedRoute,
   PublicOnlyRoute,
-  SuperAdminRoute,
+  SuperAdminGate,
 } from '@/components/auth/ProtectedRoute'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -44,11 +44,9 @@ export default function App() {
                 <Route path="monthly" element={<MonthlyReportPage />} />
                 <Route path="strategy" element={<FullStrategyPage />} />
                 <Route path="settings" element={<SettingsPage />} />
-              </Route>
-            </Route>
-            <Route element={<SuperAdminRoute />}>
-              <Route element={<AppLayout />}>
-                <Route path="admin/users" element={<AdminUsersPage />} />
+                <Route element={<SuperAdminGate />}>
+                  <Route path="admin/users" element={<AdminUsersPage />} />
+                </Route>
               </Route>
             </Route>
           </Routes>

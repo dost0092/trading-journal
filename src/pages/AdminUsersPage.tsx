@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Check, Shield, X } from 'lucide-react'
+import { Check, RefreshCw, Shield, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import type { UserProfile, UserStatus } from '@/lib/supabase'
 import { Badge } from '@/components/ui/badge'
@@ -22,7 +22,7 @@ function StatusBadge({ status, role }: { status: UserStatus; role: string }) {
 }
 
 export function AdminUsersPage() {
-  const { fetchAllUsers, updateUserStatus, profile: me } = useAuth()
+  const { fetchAllUsers, updateUserStatus, profile: me, isSuperAdmin } = useAuth()
   const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [actionId, setActionId] = useState<string | null>(null)
@@ -30,14 +30,16 @@ export function AdminUsersPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const list = await fetchAllUsers()
+    setError(null)
+    const { users: list, error: fetchError } = await fetchAllUsers()
     setUsers(list)
+    if (fetchError) setError(fetchError)
     setLoading(false)
   }, [fetchAllUsers])
 
   useEffect(() => {
-    load()
-  }, [load])
+    if (isSuperAdmin) load()
+  }, [isSuperAdmin, load])
 
   async function setStatus(userId: string, status: UserStatus) {
     setActionId(userId)
@@ -49,6 +51,14 @@ export function AdminUsersPage() {
       return
     }
     await load()
+  }
+
+  if (!isSuperAdmin) {
+    return (
+      <p className="py-8 text-center text-sm text-muted">
+        Superadmin access required.
+      </p>
+    )
   }
 
   const pendingCount = users.filter((u) => u.status === 'pending' && u.role !== 'superadmin').length
@@ -65,19 +75,31 @@ export function AdminUsersPage() {
             Approve or reject users who signed up. Superadmins always have full access.
           </p>
         </div>
-        {pendingCount > 0 && (
-          <Badge className="bg-amber-100 text-amber-800">{pendingCount} pending</Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {pendingCount > 0 && (
+            <Badge className="bg-amber-100 text-amber-800">{pendingCount} pending</Badge>
+          )}
+          <Button size="sm" variant="outline" onClick={() => load()}>
+            <RefreshCw className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}. Run <code className="text-xs">supabase/fix_auth_rls.sql</code> in Supabase SQL
+          Editor if this persists.
+        </p>
+      )}
 
       <Card className="shadow-none">
         <CardContent className="p-0">
           {loading ? (
             <p className="p-6 text-sm text-muted">Loading users...</p>
           ) : users.length === 0 ? (
-            <p className="p-6 text-sm text-muted">No users yet.</p>
+            <p className="p-6 text-sm text-muted">
+              No users found. If you expect users here, run fix_auth_rls.sql in Supabase.
+            </p>
           ) : (
             <div className="divide-y divide-border">
               {users.map((user) => {
@@ -92,9 +114,7 @@ export function AdminUsersPage() {
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">
                         {user.full_name ?? 'Unknown'}
-                        {isSelf && (
-                          <span className="ml-2 text-xs text-muted">(you)</span>
-                        )}
+                        {isSelf && <span className="ml-2 text-xs text-muted">(you)</span>}
                       </p>
                       <p className="truncate text-xs text-muted">{user.email}</p>
                     </div>

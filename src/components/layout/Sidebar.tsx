@@ -4,6 +4,7 @@ import {
   BookOpen,
   CalendarDays,
   LayoutDashboard,
+  LogOut,
   PenLine,
   Settings,
   Shield,
@@ -16,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { useTrades } from '@/context/TradeContext'
 import { useAuth } from '@/context/AuthContext'
 import { isSupabaseConfigured } from '@/lib/supabase'
+import { resolveDisplayName, resolveInitials } from '@/lib/authUtils'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -31,15 +33,11 @@ const ADMIN_NAV = [{ to: '/admin/users', label: 'Manage Users', icon: Shield }]
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { stats } = useTrades()
-  const { profile, isSuperAdmin } = useAuth()
+  const { session, profile, user, isSuperAdmin, signOut } = useAuth()
 
-  const displayName = profile?.full_name ?? 'Demo User'
-  const initials = displayName
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
+  const email = profile?.email ?? user?.email ?? session?.user?.email
+  const displayName = resolveDisplayName(profile, email)
+  const initials = resolveInitials(displayName)
 
   return (
     <aside className="flex h-full w-[260px] flex-col border-r border-border bg-card">
@@ -126,15 +124,25 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <Avatar className="h-8 w-8">
               <AvatarFallback className="text-[11px]">{initials}</AvatarFallback>
             </Avatar>
-            <div>
-              <p className="text-sm font-medium">{displayName}</p>
-              <p className="text-[11px] text-muted">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{displayName}</p>
+              <p className="truncate text-[11px] text-muted">
                 {isSuperAdmin ? 'Superadmin · ' : ''}
                 XAU/USD · {stats.winRate}% win
                 {!isSupabaseConfigured && ' · demo'}
               </p>
             </div>
           </div>
+          {session && (
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border py-2 text-xs font-medium text-muted transition hover:text-destructive"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Sign out
+            </button>
+          )}
         </div>
       </div>
     </aside>

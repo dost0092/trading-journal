@@ -51,6 +51,7 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
 6. Open **SQL Editor** in Supabase:
    - **New project:** run `supabase/schema.sql`
    - **Already ran old schema:** run `supabase/migration_user_approval.sql`
+   - **Auth / user management not working:** run `supabase/fix_auth_rls.sql` ← **run this if superadmin or Manage Users fails**
 
 7. **Authentication → Providers → Email** — leave Email enabled (default).
 

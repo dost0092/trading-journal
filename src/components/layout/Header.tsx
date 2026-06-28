@@ -1,4 +1,7 @@
-import { Bell, Search } from 'lucide-react'
+import { Bell, LogOut, Search } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
+import { resolveDisplayName, resolveInitials } from '@/lib/authUtils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { CalendarHeaderButton } from '@/components/calendar/CalendarWidget'
@@ -11,12 +14,17 @@ const TITLES: Record<string, string> = {
   '/monthly': 'Monthly Report',
   '/strategy': 'Full Strategy',
   '/settings': 'Settings',
+  '/admin/users': 'Manage Users',
 }
 
-/** Pages that already show a full calendar in the main content — hide header calendar */
 const PAGES_WITH_SIDEBAR_CALENDAR = new Set(['/daily', '/weekly', '/monthly'])
 
 export function Header({ pathname }: { pathname: string }) {
+  const { session, profile, user, isSuperAdmin, signOut } = useAuth()
+  const email = profile?.email ?? user?.email ?? session?.user?.email
+  const displayName = resolveDisplayName(profile, email)
+  const initials = resolveInitials(displayName)
+
   const title =
     TITLES[pathname] ??
     Object.entries(TITLES).find(([k]) => pathname.startsWith(k))?.[1] ??
@@ -31,10 +39,7 @@ export function Header({ pathname }: { pathname: string }) {
       <div className="flex items-center gap-3">
         <div className="relative hidden md:block">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search trades..."
-            className="h-9 w-52 pl-9 text-xs"
-          />
+          <Input placeholder="Search trades..." className="h-9 w-52 pl-9 text-xs" />
         </div>
 
         {showHeaderCalendar && (
@@ -50,9 +55,34 @@ export function Header({ pathname }: { pathname: string }) {
           <Bell className="h-4 w-4" />
         </button>
 
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="text-[11px]">JD</AvatarFallback>
-        </Avatar>
+        {isSuperAdmin && (
+          <Link
+            to="/admin/users"
+            className="hidden rounded-xl border border-primary/20 bg-primary/8 px-3 py-1.5 text-xs font-medium text-primary sm:inline-flex"
+          >
+            Admin
+          </Link>
+        )}
+
+        {session ? (
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="text-[11px]">{initials}</AvatarFallback>
+            </Avatar>
+            <button
+              type="button"
+              onClick={() => signOut()}
+              title="Sign out"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-card text-muted transition hover:text-destructive"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="text-[11px]">TJ</AvatarFallback>
+          </Avatar>
+        )}
       </div>
     </header>
   )
