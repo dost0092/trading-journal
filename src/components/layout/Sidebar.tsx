@@ -13,6 +13,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { useTrades } from '@/context/TradeContext'
+import { useAuth } from '@/context/AuthContext'
+import { isSupabaseConfigured } from '@/lib/supabase'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -26,6 +28,15 @@ const NAV = [
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { stats } = useTrades()
+  const { profile, isSuperAdmin } = useAuth()
+
+  const displayName = profile?.full_name ?? 'Demo User'
+  const initials = displayName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 
   return (
     <aside className="flex h-full w-[260px] flex-col border-r border-border bg-card">
@@ -35,7 +46,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <div>
           <p className="text-sm font-semibold tracking-tight">Trade Journal</p>
-          <p className="text-[11px] text-muted">Pro Dashboard</p>
+          <p className="text-[11px] text-muted">Gold Journal</p>
         </div>
       </div>
 
@@ -79,30 +90,16 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="p-4">
         <Separator className="mb-4" />
         <div className="rounded-2xl border border-border bg-background p-4">
-          <div className="mb-3 flex items-center gap-3">
-            <Avatar>
-              <AvatarFallback>JD</AvatarFallback>
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="text-[11px]">{initials}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-sm font-medium">John Doe</p>
-              <p className="text-[11px] text-muted">Active Trader</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-xl bg-card p-2.5 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-muted">
-                Streak
-              </p>
-              <p className="text-sm font-semibold text-primary">
-                {stats.tradingStreak}d
-              </p>
-            </div>
-            <div className="rounded-xl bg-card p-2.5 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-muted">
-                Win Rate
-              </p>
-              <p className="text-sm font-semibold text-success">
-                {stats.winRate}%
+              <p className="text-sm font-medium">{displayName}</p>
+              <p className="text-[11px] text-muted">
+                {isSuperAdmin ? 'Superadmin · ' : ''}
+                XAU/USD · {stats.winRate}% win
+                {!isSupabaseConfigured && ' · demo'}
               </p>
             </div>
           </div>

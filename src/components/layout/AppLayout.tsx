@@ -49,7 +49,7 @@ export function AppLayout() {
         </div>
 
         <Header pathname={pathname} />
-        <main className="p-4 sm:p-6">
+        <main className="px-4 py-8 sm:px-8 sm:py-10">
           <Outlet />
         </main>
       </div>

@@ -7,16 +7,20 @@ import {
   type ReactNode,
 } from 'react'
 import { MOCK_TRADES, calcStats } from '@/data/mockData'
-import type { TradeEntry, TradeImage } from '@/types/trade'
+import { filterByStrategy } from '@/lib/tradeUtils'
+import type { StrategyFilter, TradeEntry, TradeImage } from '@/types/trade'
 
 interface TradeContextValue {
   trades: TradeEntry[]
   selectedDate: string | null
   setSelectedDate: (date: string | null) => void
-  addTrade: (trade: Omit<TradeEntry, 'id' | 'createdAt'>) => void
+  strategyFilter: StrategyFilter
+  setStrategyFilter: (f: StrategyFilter) => void
+  addTrade: (trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair'>) => void
   deleteTrade: (id: string) => void
   stats: ReturnType<typeof calcStats>
   filteredTrades: TradeEntry[]
+  filteredByStrategy: TradeEntry[]
 }
 
 const TradeContext = createContext<TradeContextValue | null>(null)
@@ -24,11 +28,13 @@ const TradeContext = createContext<TradeContextValue | null>(null)
 export function TradeProvider({ children }: { children: ReactNode }) {
   const [trades, setTrades] = useState<TradeEntry[]>(MOCK_TRADES)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [strategyFilter, setStrategyFilter] = useState<StrategyFilter>('all')
 
   const addTrade = useCallback(
-    (trade: Omit<TradeEntry, 'id' | 'createdAt'>) => {
+    (trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair'>) => {
       const entry: TradeEntry = {
         ...trade,
+        pair: 'XAU/USD',
         id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
       }
@@ -41,24 +47,42 @@ export function TradeProvider({ children }: { children: ReactNode }) {
     setTrades((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
-  const stats = useMemo(() => calcStats(trades), [trades])
+  const filteredByStrategy = useMemo(
+    () => filterByStrategy(trades, strategyFilter),
+    [trades, strategyFilter],
+  )
+
+  const stats = useMemo(() => calcStats(filteredByStrategy), [filteredByStrategy])
 
   const filteredTrades = useMemo(() => {
-    if (!selectedDate) return trades
-    return trades.filter((t) => t.date === selectedDate)
-  }, [trades, selectedDate])
+    let list = filteredByStrategy
+    if (selectedDate) list = list.filter((t) => t.date === selectedDate)
+    return list
+  }, [filteredByStrategy, selectedDate])
 
   const value = useMemo(
     () => ({
       trades,
       selectedDate,
       setSelectedDate,
+      strategyFilter,
+      setStrategyFilter,
       addTrade,
       deleteTrade,
       stats,
       filteredTrades,
+      filteredByStrategy,
     }),
-    [trades, selectedDate, addTrade, deleteTrade, stats, filteredTrades],
+    [
+      trades,
+      selectedDate,
+      strategyFilter,
+      addTrade,
+      deleteTrade,
+      stats,
+      filteredTrades,
+      filteredByStrategy,
+    ],
   )
 
   return (

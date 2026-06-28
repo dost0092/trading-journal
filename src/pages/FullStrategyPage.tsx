@@ -1,20 +1,26 @@
-import { BookOpen } from 'lucide-react'
-import { STRATEGIES } from '@/data/strategies'
-import { StrategyCard } from '@/components/strategy/StrategyCard'
+import { PLACEHOLDER_RULES, STRATEGIES } from '@/data/strategies'
+import { Card, CardContent } from '@/components/ui/card'
 
 export function FullStrategyPage() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <BookOpen className="h-4 w-4 text-primary" />
-        <p className="text-sm text-muted">
-          Your complete strategy playbook with rules and reference charts.
-        </p>
-      </div>
+    <div className="mx-auto max-w-2xl space-y-8 py-4">
+      <p className="text-sm text-muted">XAU/USD strategy playbook</p>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {STRATEGIES.map((strategy) => (
-          <StrategyCard key={strategy.id} strategy={strategy} />
+      <div className="space-y-6">
+        {STRATEGIES.map((s) => (
+          <Card key={s.id} className="shadow-none">
+            <CardContent className="space-y-4 p-6">
+              <p className="text-base font-semibold">{s.name}</p>
+              <ul className="space-y-2">
+                {PLACEHOLDER_RULES.map((r) => (
+                  <li key={r.id} className="flex gap-2 text-sm text-muted">
+                    <span className="text-primary">·</span>
+                    {r.label}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>

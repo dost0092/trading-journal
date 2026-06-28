@@ -1,41 +1,47 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuth } from '@/context/AuthContext'
+import { isSupabaseConfigured } from '@/lib/supabase'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input, Label } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 export function SettingsPage() {
-  return (
-    <div className="mx-auto max-w-lg space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="name">Display Name</Label>
-            <Input id="name" defaultValue="John Doe" />
-          </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" defaultValue="trader@example.com" />
-          </div>
-          <Button>Save Changes</Button>
-        </CardContent>
-      </Card>
+  const { profile, isSuperAdmin, signOut } = useAuth()
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Preferences</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+  return (
+    <div className="mx-auto max-w-md space-y-8 py-4">
+      <Card className="shadow-none">
+        <CardContent className="space-y-5 p-6">
+          <p className="text-sm font-semibold">Profile</p>
           <div>
-            <Label htmlFor="risk">Default Risk %</Label>
-            <Input id="risk" type="number" defaultValue="1" step="0.1" />
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              defaultValue={profile?.full_name ?? 'Demo User'}
+              readOnly={isSupabaseConfigured}
+              className="mt-1.5"
+            />
           </div>
-          <div>
-            <Label htmlFor="currency">Base Currency</Label>
-            <Input id="currency" defaultValue="USD" />
-          </div>
-          <Button variant="secondary">Update Preferences</Button>
+          {profile?.email && (
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" defaultValue={profile.email} readOnly className="mt-1.5" />
+            </div>
+          )}
+          {isSuperAdmin && (
+            <p className="rounded-xl bg-primary/8 px-3 py-2 text-xs text-primary">
+              You are signed in as superadmin.
+            </p>
+          )}
+          {!isSupabaseConfigured && (
+            <p className="text-xs text-muted">
+              Running in demo mode. Add Supabase env vars to enable login.
+            </p>
+          )}
+          {isSupabaseConfigured && (
+            <Button variant="outline" onClick={() => signOut()}>
+              Sign out
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,8 +1,12 @@
+import { useMemo, useState } from 'react'
 import {
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
+  Legend,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -10,81 +14,213 @@ import {
 } from 'recharts'
 import { CalendarWidget } from '@/components/calendar/CalendarWidget'
 import { ChartCard } from '@/components/dashboard/ChartCard'
-import { StatCard } from '@/components/dashboard/StatCard'
-import { TradeCard } from '@/components/trade/TradeCard'
-import { WEEKLY_DAILY } from '@/data/mockData'
+import { TradeBoxCard, TradeDetailModal } from '@/components/trade/TradeBoxCard'
+import { calcStats } from '@/data/mockData'
 import { useTrades } from '@/context/TradeContext'
-import { DollarSign, Percent, Target, TrendingUp } from 'lucide-react'
+import {
+  buildWeeklyBreakdown,
+  formatWeekRange,
+  getTradesInWeek,
+} from '@/lib/tradeUtils'
+import type { TradeEntry } from '@/types/trade'
 
 export function WeeklyReportPage() {
-  const { trades, stats } = useTrades()
-  const weekTrades = trades.slice(0, 8)
+  const { filteredByStrategy } = useTrades()
+  const [selected, setSelected] = useState<TradeEntry | null>(null)
 
-  const winLoss = [
-    { name: 'Win', value: stats.profitPercent, color: '#22C55E' },
-    { name: 'Loss', value: stats.lossPercent, color: '#EF4444' },
+  const weekTrades = useMemo(
+    () => getTradesInWeek(filteredByStrategy),
+    [filteredByStrategy],
+  )
+
+  const weekStats = useMemo(() => calcStats(weekTrades), [weekTrades])
+
+  const weekDays = useMemo(
+    () => buildWeeklyBreakdown(filteredByStrategy),
+    [filteredByStrategy],
+  )
+
+  const pieData = [
+    { name: 'Win', value: weekStats.winRate, color: '#22C55E' },
+    { name: 'Loss', value: weekStats.lossRate, color: '#EF4444' },
   ]
 
+  const breakdownTotal = weekDays.reduce((s, d) => s + d.total, 0)
+
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Weekly Win Rate" value={`${stats.winRate}%`} icon={Percent} trend="up" />
-        <StatCard
-          label="Weekly PnL"
-          value={`${stats.weekPnl >= 0 ? '+' : ''}$${stats.weekPnl}`}
-          icon={DollarSign}
-          trend={stats.weekPnl >= 0 ? 'up' : 'down'}
-        />
-        <StatCard label="Weekly RR" value={`1:${stats.avgRR}`} icon={Target} />
-        <StatCard label="Trades" value={String(weekTrades.length)} icon={TrendingUp} />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="Daily Performance" description="PnL by day this week">
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={WEEKLY_DAILY}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E8E8E8" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E8E8E8', fontSize: 12 }} />
-                <Bar dataKey="pnl" radius={[6, 6, 0, 0]}>
-                  {WEEKLY_DAILY.map((entry, i) => (
-                    <Cell key={i} fill={entry.pnl >= 0 ? '#22C55E' : '#EF4444'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+    <div className="mx-auto max-w-6xl space-y-10 py-4">
+      <div>
+        <p className="text-xs text-muted">Week of {formatWeekRange()}</p>
+        <div className="mt-4 grid grid-cols-3 gap-6 text-center">
+          <div>
+            <p className="text-3xl font-semibold tracking-tight">
+              {weekStats.totalTrades}
+            </p>
+            <p className="mt-2 text-sm text-muted">Total Trades</p>
           </div>
-        </ChartCard>
-
-        <ChartCard title="Win / Loss %" description="Weekly breakdown">
-          <div className="flex h-52 items-end justify-center gap-8 pb-4">
-            {winLoss.map(({ name, value, color }) => (
-              <div key={name} className="flex flex-col items-center gap-2">
-                <div
-                  className="w-16 rounded-t-xl transition-all"
-                  style={{ height: `${value * 1.5}px`, backgroundColor: color }}
-                />
-                <span className="text-xs font-medium">{name}</span>
-                <span className="text-lg font-semibold">{value}%</span>
-              </div>
-            ))}
+          <div>
+            <p className="text-3xl font-semibold tracking-tight">
+              {weekStats.winRate}%
+            </p>
+            <p className="mt-2 text-sm text-muted">Weekly Win</p>
+            <p className="mt-1 text-xs text-muted">{weekStats.wins} wins</p>
           </div>
-        </ChartCard>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
-        <CalendarWidget showLegend />
-        <div>
-          <h3 className="mb-3 text-sm font-semibold">This Week&apos;s Trades</h3>
-          <div className="space-y-2">
-            {weekTrades.map((t) => (
-              <TradeCard key={t.id} trade={t} compact />
-            ))}
+          <div>
+            <p className="text-3xl font-semibold tracking-tight">
+              {weekStats.lossRate}%
+            </p>
+            <p className="mt-2 text-sm text-muted">Weekly Loss</p>
+            <p className="mt-1 text-xs text-muted">{weekStats.losses} losses</p>
           </div>
         </div>
       </div>
+
+      <div className="grid gap-6 md:grid-cols-[1fr_240px]">
+        <ChartCard
+          title="Win / Loss"
+          description={`${weekStats.totalTrades} trades this week`}
+        >
+          <div className="flex h-48 items-center justify-center">
+            {weekStats.totalTrades > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={48}
+                    outerRadius={72}
+                    paddingAngle={4}
+                    label={({ name, value }) => `${name} ${value}%`}
+                    labelLine={false}
+                  >
+                    {pieData.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: '1px solid #E8E8E8',
+                      fontSize: 12,
+                    }}
+                    formatter={(v) => [`${v}%`, '']}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={28}
+                    formatter={(value) => (
+                      <span className="text-xs text-muted">{value}</span>
+                    )}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-sm text-muted">No trades this week</p>
+            )}
+          </div>
+        </ChartCard>
+
+        <CalendarWidget compact showLegend />
+      </div>
+
+      <ChartCard
+        title="Weekly Breakdown"
+        description={`Mon – Sun · ${breakdownTotal} total trades`}
+      >
+        <div className="h-52">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={weekDays}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8E8E8" vertical={false} />
+              <XAxis
+                dataKey="day"
+                tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  borderRadius: 12,
+                  border: '1px solid #E8E8E8',
+                  fontSize: 12,
+                }}
+                formatter={(value, name) => {
+                  const labels: Record<string, string> = {
+                    wins: 'Wins',
+                    losses: 'Losses',
+                    total: 'Total',
+                  }
+                  return [value, labels[String(name)] ?? name]
+                }}
+              />
+              <Legend
+                verticalAlign="top"
+                height={24}
+                formatter={(value) => (
+                  <span className="text-xs capitalize text-muted">{value}</span>
+                )}
+              />
+              <Bar dataKey="wins" name="Wins" fill="#22C55E" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="losses" name="Losses" fill="#EF4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="total" name="Total" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </ChartCard>
+
+      {/* This week's trades — Mon → Sun */}
+      <div className="space-y-8">
+        <p className="text-sm font-semibold">This Week&apos;s Trades</p>
+
+        {weekTrades.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border py-12 text-center text-sm text-muted">
+            No trades logged this week.
+          </div>
+        ) : (
+          weekDays.map(({ day, date, trades, total }) => (
+            <div key={date} className="space-y-3">
+              <div className="flex items-baseline justify-between">
+                <p className="text-xs font-medium text-foreground">
+                  {day}
+                  <span className="ml-2 font-normal text-muted">
+                    {date}
+                  </span>
+                </p>
+                <span className="text-[11px] text-muted">
+                  {total} trade{total !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              {trades.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {trades.map((trade) => (
+                    <TradeBoxCard
+                      key={trade.id}
+                      trade={trade}
+                      active={selected?.id === trade.id}
+                      onClick={() => setSelected(trade)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-muted">No trades</p>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      <TradeDetailModal
+        trade={selected}
+        open={!!selected}
+        onClose={() => setSelected(null)}
+      />
     </div>
   )
 }

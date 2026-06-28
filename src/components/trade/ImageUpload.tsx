@@ -1,135 +1,78 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { ImagePlus, RefreshCw, Trash2 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Button } from '@/components/ui/button'
+import { ImagePlus, Trash2 } from 'lucide-react'
 import type { TradeImage } from '@/types/trade'
 import { cn } from '@/lib/utils'
 
 interface ImageUploadProps {
-  images: TradeImage[]
-  onChange: (images: TradeImage[]) => void
+  image: TradeImage | null
+  onChange: (image: TradeImage | null) => void
 }
 
-export function ImageUpload({ images, onChange }: ImageUploadProps) {
-  const [dragActive, setDragActive] = useState(false)
-
+export function ImageUpload({ image, onChange }: ImageUploadProps) {
   const onDrop = useCallback(
     (accepted: File[]) => {
-      const newImages: TradeImage[] = accepted.map((file) => ({
+      const file = accepted[0]
+      if (!file) return
+      if (image) URL.revokeObjectURL(image.previewUrl)
+      onChange({
         id: crypto.randomUUID(),
         name: file.name,
         previewUrl: URL.createObjectURL(file),
-        type: 'chart',
-      }))
-      onChange([...images, ...newImages])
+      })
     },
-    [images, onChange],
+    [image, onChange],
   )
 
-  const { getRootProps, getInputProps, open } = useDropzone({
+  const { getRootProps, getInputProps, open, isDragActive } = useDropzone({
     onDrop,
     accept: { 'image/*': [] },
-    noClick: true,
-    onDragEnter: () => setDragActive(true),
-    onDragLeave: () => setDragActive(false),
+    maxFiles: 1,
+    multiple: false,
+    noClick: !image,
   })
 
-  const remove = (id: string) => {
-    const img = images.find((i) => i.id === id)
-    if (img) URL.revokeObjectURL(img.previewUrl)
-    onChange(images.filter((i) => i.id !== id))
+  const remove = () => {
+    if (image) URL.revokeObjectURL(image.previewUrl)
+    onChange(null)
   }
 
-  const replace = (id: string) => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (!file) return
-      const old = images.find((i) => i.id === id)
-      if (old) URL.revokeObjectURL(old.previewUrl)
-      onChange(
-        images.map((i) =>
-          i.id === id
-            ? { ...i, name: file.name, previewUrl: URL.createObjectURL(file) }
-            : i,
-        ),
-      )
-    }
-    input.click()
+  if (image) {
+    return (
+      <div className="flex items-center gap-4 rounded-2xl border border-border bg-secondary/30 p-3">
+        <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl border border-border bg-card">
+          <img src={image.previewUrl} alt="Setup" className="h-full w-full object-cover" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-medium">{image.name}</p>
+          <p className="text-[11px] text-muted">Chart screenshot</p>
+        </div>
+        <button
+          type="button"
+          onClick={remove}
+          className="rounded-lg p-2 text-muted transition hover:bg-card hover:text-danger"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-4">
-      <div
-        {...getRootProps()}
-        className={cn(
-          'flex min-h-[140px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-200',
-          dragActive
-            ? 'border-primary bg-blue-50/50'
-            : 'border-border bg-secondary/30 hover:border-primary/40 hover:bg-blue-50/20',
-        )}
-        onClick={open}
-      >
-        <input {...getInputProps()} />
-        <ImagePlus className="mb-2 h-7 w-7 text-muted-foreground" />
-        <p className="text-sm font-medium">Upload Chart Screenshot</p>
-        <p className="mt-1 text-xs text-muted">
-          Drag & drop or click · Before / After entry
-        </p>
-      </div>
-
-      {images.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
-          <AnimatePresence>
-            {images.map((img) => (
-              <motion.div
-                key={img.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="group relative"
-              >
-                <div className="aspect-square overflow-hidden rounded-xl border border-border bg-card shadow-sm transition group-hover:shadow-md">
-                  <img
-                    src={img.previewUrl}
-                    alt={img.name}
-                    className="h-full w-full object-cover transition group-hover:scale-105"
-                  />
-                </div>
-                <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1 rounded-b-xl bg-black/50 p-1 opacity-0 transition group-hover:opacity-100">
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="h-6 w-6 text-white hover:bg-white/20"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      replace(img.id)
-                    }}
-                  >
-                    <RefreshCw className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="h-6 w-6 text-white hover:bg-white/20"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      remove(img.id)
-                    }}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+    <div
+      {...getRootProps()}
+      onClick={open}
+      className={cn(
+        'flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-4 py-8 transition-all',
+        isDragActive
+          ? 'border-primary bg-blue-50/50'
+          : 'border-border bg-secondary/20 hover:border-primary/40 hover:bg-blue-50/30',
       )}
+    >
+      <input {...getInputProps()} />
+      <ImagePlus className="mb-2 h-6 w-6 text-muted-foreground" />
+      <p className="text-sm font-medium">Upload setup screenshot</p>
+      <p className="mt-1 text-xs text-muted">One image · drag or click</p>
     </div>
   )
 }

@@ -2,13 +2,12 @@ export type TradeDirection = 'buy' | 'sell'
 export type TradeResult = 'win' | 'loss' | 'breakeven'
 export type StrategyId = 'liquidity_sweep' | 'liquidity_run'
 export type SessionType = 'london' | 'new_york' | 'asia' | 'overlap'
-export type DayStatus = 'win' | 'loss' | 'none'
+export type StrategyFilter = 'all' | StrategyId
 
 export interface TradeImage {
   id: string
   name: string
   previewUrl: string
-  type: 'chart' | 'before' | 'after' | 'trade'
 }
 
 export interface TradeEntry {
@@ -24,57 +23,13 @@ export interface TradeEntry {
   stopLoss: number
   takeProfit: number
   result: TradeResult
-  pnl: number
-  notes: string
   strategy: StrategyId
-  criteriaMet: string[]
-  images: TradeImage[]
+  /** Checked rule ids — used for calendar star scoring */
+  rulesMet: string[]
+  image: TradeImage | null
   createdAt: string
 }
 
-export interface StrategyCriteria {
-  id: string
-  label: string
-}
+export const GOLD_PAIR = 'XAU/USD'
 
-export interface StrategyDefinition {
-  id: StrategyId
-  name: string
-  description: string
-  rules: string[]
-  criteria: StrategyCriteria[]
-}
-
-export interface DashboardStats {
-  totalTrades: number
-  winRate: number
-  monthPnl: number
-  weekPnl: number
-  avgRR: number
-  tradingStreak: number
-  winningStreak: number
-  losingStreak: number
-  profitPercent: number
-  lossPercent: number
-  drawdownPercent: number
-  monthlyPercent: number
-  weeklyPercent: number
-}
-
-export interface TradeFormValues {
-  date: string
-  time: string
-  pair: string
-  session: SessionType
-  direction: TradeDirection
-  riskPercent: number
-  lotSize: number
-  entry: number
-  stopLoss: number
-  takeProfit: number
-  result: TradeResult
-  pnl: number
-  notes: string
-  strategy: StrategyId
-  criteriaMet: Record<string, boolean>
-}
+export const RULE_IDS = ['rule1', 'rule2', 'rule3', 'rule4', 'rule5'] as const

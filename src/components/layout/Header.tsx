@@ -1,7 +1,7 @@
 import { Bell, Search } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
-import { CalendarWidget } from '@/components/calendar/CalendarWidget'
+import { CalendarHeaderButton } from '@/components/calendar/CalendarWidget'
 
 const TITLES: Record<string, string> = {
   '/': 'Dashboard',
@@ -13,11 +13,16 @@ const TITLES: Record<string, string> = {
   '/settings': 'Settings',
 }
 
+/** Pages that already show a full calendar in the main content — hide header calendar */
+const PAGES_WITH_SIDEBAR_CALENDAR = new Set(['/daily', '/weekly', '/monthly'])
+
 export function Header({ pathname }: { pathname: string }) {
   const title =
     TITLES[pathname] ??
     Object.entries(TITLES).find(([k]) => pathname.startsWith(k))?.[1] ??
     'Dashboard'
+
+  const showHeaderCalendar = !PAGES_WITH_SIDEBAR_CALENDAR.has(pathname)
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 border-b border-border bg-background/80 px-6 backdrop-blur-md">
@@ -32,9 +37,11 @@ export function Header({ pathname }: { pathname: string }) {
           />
         </div>
 
-        <div className="hidden lg:block">
-          <CalendarWidget compact />
-        </div>
+        {showHeaderCalendar && (
+          <div className="hidden sm:block">
+            <CalendarHeaderButton />
+          </div>
+        )}
 
         <button
           type="button"
