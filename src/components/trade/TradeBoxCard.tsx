@@ -1,11 +1,16 @@
 import { format, parseISO } from 'date-fns'
-import { ImageIcon } from 'lucide-react'
+import { Check, ImageIcon, X } from 'lucide-react'
 import { DialogRoot } from '@/components/ui/dialog'
 import { QualityStar } from '@/components/calendar/QualityStar'
+import { PLACEHOLDER_RULES } from '@/data/strategies'
 import { STRATEGY_LABELS } from '@/data/strategies'
 import { getRuleCount, getStarTier } from '@/lib/tradeUtils'
-import type { TradeEntry } from '@/types/trade'
+import { RULE_IDS, type TradeEntry } from '@/types/trade'
 import { cn } from '@/lib/utils'
+
+function getRuleLabel(trade: TradeEntry, ruleId: string): string {
+  return trade.ruleLabels?.[ruleId] ?? PLACEHOLDER_RULES.find((r) => r.id === ruleId)?.label ?? ruleId
+}
 
 interface TradeBoxCardProps {
   trade: TradeEntry
@@ -144,7 +149,31 @@ export function TradeDetailModal({ trade, open, onClose }: TradeDetailModalProps
         </div>
       </div>
 
-      {/* Simple fields */}
+      <div className="mb-5 space-y-2 border-t border-border pt-4">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted">Rules checklist</p>
+        <ul className="space-y-1.5">
+          {RULE_IDS.map((ruleId) => {
+            const met = trade.rulesMet.includes(ruleId)
+            return (
+              <li
+                key={ruleId}
+                className={cn(
+                  'flex items-start gap-2 rounded-lg px-2 py-1.5 text-sm',
+                  met ? 'bg-emerald-50/80' : 'bg-secondary/40',
+                )}
+              >
+                {met ? (
+                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                ) : (
+                  <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
+                )}
+                <span className={cn(!met && 'text-muted')}>{getRuleLabel(trade, ruleId)}</span>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+
       <dl className="space-y-2.5 border-t border-border pt-4 text-sm">
         {[
           ['Time', trade.time],

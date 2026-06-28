@@ -14,6 +14,7 @@ export const tradeFormSchema = z.object({
   result: z.enum(['win', 'loss', 'breakeven']),
   strategy: z.enum(['liquidity_sweep', 'liquidity_run']),
   rulesMet: z.record(z.string(), z.boolean()),
+  ruleLabels: z.record(z.string(), z.string()),
 })
 
 export type TradeFormSchema = z.infer<typeof tradeFormSchema>
@@ -31,6 +32,7 @@ export const defaultTradeFormValues: TradeFormSchema = {
   result: 'win',
   strategy: 'liquidity_sweep',
   rulesMet: {},
+  ruleLabels: {},
 }
 
 export const GOLD_PAIR_FIXED = GOLD_PAIR

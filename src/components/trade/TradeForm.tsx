@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
@@ -7,13 +7,19 @@ import { Input, Label, Select } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { CheckboxGroup } from '@/components/trade/CheckboxGroup'
 import { ImageUpload } from '@/components/trade/ImageUpload'
-import { STRATEGIES, PLACEHOLDER_RULES } from '@/data/strategies'
+import { STRATEGIES } from '@/data/strategies'
+import {
+  getSavedRules,
+  rulesToLabelMap,
+  saveRules,
+  type TradeRule,
+} from '@/lib/ruleStorage'
 import {
   tradeFormSchema,
   defaultTradeFormValues,
   type TradeFormSchema,
 } from '@/lib/tradeSchema'
-import { GOLD_PAIR } from '@/types/trade'
+import { GOLD_PAIR, RULE_IDS } from '@/types/trade'
 import type { TradeImage } from '@/types/trade'
 import { cn } from '@/lib/utils'
 
@@ -23,10 +29,22 @@ interface TradeFormProps {
   onSubmit: (data: TradeFormSchema, image: TradeImage | null) => void
 }
 
+function emptyRulesMet(): Record<string, boolean> {
+  return Object.fromEntries(RULE_IDS.map((id) => [id, false]))
+}
+
 export function TradeForm({ image, onImageChange, onSubmit }: TradeFormProps) {
+  const [rules, setRules] = useState<TradeRule[]>(() =>
+    getSavedRules(defaultTradeFormValues.strategy),
+  )
+
   const form = useForm<TradeFormSchema>({
     resolver: zodResolver(tradeFormSchema),
-    defaultValues: defaultTradeFormValues,
+    defaultValues: {
+      ...defaultTradeFormValues,
+      rulesMet: emptyRulesMet(),
+      ruleLabels: rulesToLabelMap(getSavedRules(defaultTradeFormValues.strategy)),
+    },
     mode: 'onChange',
   })
 
@@ -34,20 +52,25 @@ export function TradeForm({ image, onImageChange, onSubmit }: TradeFormProps) {
   const values = watch()
 
   useEffect(() => {
-    const rulesMet: Record<string, boolean> = {}
-    PLACEHOLDER_RULES.forEach((r) => {
-      rulesMet[r.id] = false
-    })
-    setValue('rulesMet', rulesMet)
+    const savedRules = getSavedRules(values.strategy)
+    setRules(savedRules)
+    setValue('ruleLabels', rulesToLabelMap(savedRules))
+    setValue('rulesMet', emptyRulesMet())
   }, [values.strategy, setValue])
 
   const handleRuleChange = (id: string, checked: boolean) => {
     setValue('rulesMet', { ...values.rulesMet, [id]: checked })
   }
 
+  const handleLabelChange = (id: string, label: string) => {
+    const next = rules.map((r) => (r.id === id ? { ...r, label } : r))
+    setRules(next)
+    saveRules(values.strategy, next)
+    setValue('ruleLabels', rulesToLabelMap(next))
+  }
+
   return (
     <form onSubmit={handleSubmit((data) => onSubmit(data, image))} className="mx-auto max-w-2xl space-y-10">
-      {/* Strategy toggle — top, large */}
       <div className="space-y-3">
         <p className="text-xs font-medium uppercase tracking-wider text-muted">Strategy</p>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -69,7 +92,6 @@ export function TradeForm({ image, onImageChange, onSubmit }: TradeFormProps) {
         </div>
       </div>
 
-      {/* Rules — simple checkboxes */}
       <motion.div
         key={values.strategy}
         initial={{ opacity: 0, y: 6 }}
@@ -78,13 +100,14 @@ export function TradeForm({ image, onImageChange, onSubmit }: TradeFormProps) {
       >
         <p className="text-xs font-medium uppercase tracking-wider text-muted">Rules</p>
         <CheckboxGroup
-          criteria={PLACEHOLDER_RULES}
+          criteria={rules}
           values={values.rulesMet}
           onChange={handleRuleChange}
+          onLabelChange={handleLabelChange}
+          editable
         />
       </motion.div>
 
-      {/* Trade info */}
       <Card className="border-border/80 shadow-none">
         <CardContent className="space-y-6 p-6 pt-6">
           <div className="flex items-center justify-between border-b border-border pb-4">

@@ -30,6 +30,7 @@ export function EntryTradePage() {
       rulesMet: Object.entries(data.rulesMet)
         .filter(([, v]) => v)
         .map(([k]) => k),
+      ruleLabels: data.ruleLabels,
       image: img,
     })
     setImage(null)

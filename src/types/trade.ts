@@ -26,6 +26,8 @@ export interface TradeEntry {
   strategy: StrategyId
   /** Checked rule ids — used for calendar star scoring */
   rulesMet: string[]
+  /** Custom rule text saved with the trade */
+  ruleLabels?: Record<string, string>
   image: TradeImage | null
   createdAt: string
 }
