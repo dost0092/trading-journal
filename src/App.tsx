@@ -1,7 +1,12 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from '@/context/AuthContext'
 import { TradeProvider } from '@/context/TradeContext'
-import { ProtectedRoute, PublicOnlyRoute } from '@/components/auth/ProtectedRoute'
+import {
+  PendingRoute,
+  ProtectedRoute,
+  PublicOnlyRoute,
+  SuperAdminRoute,
+} from '@/components/auth/ProtectedRoute'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { EntryTradePage } from '@/pages/EntryTradePage'
@@ -12,6 +17,9 @@ import { FullStrategyPage } from '@/pages/FullStrategyPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { SignupPage } from '@/pages/SignupPage'
+import { PendingApprovalPage } from '@/pages/PendingApprovalPage'
+import { AccessDeniedPage } from '@/pages/AccessDeniedPage'
+import { AdminUsersPage } from '@/pages/AdminUsersPage'
 
 export default function App() {
   return (
@@ -23,6 +31,10 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
             </Route>
+            <Route element={<PendingRoute />}>
+              <Route path="/pending-approval" element={<PendingApprovalPage />} />
+              <Route path="/access-denied" element={<AccessDeniedPage />} />
+            </Route>
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route index element={<DashboardPage />} />
@@ -32,6 +44,11 @@ export default function App() {
                 <Route path="monthly" element={<MonthlyReportPage />} />
                 <Route path="strategy" element={<FullStrategyPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+              </Route>
+            </Route>
+            <Route element={<SuperAdminRoute />}>
+              <Route element={<AppLayout />}>
+                <Route path="admin/users" element={<AdminUsersPage />} />
               </Route>
             </Route>
           </Routes>

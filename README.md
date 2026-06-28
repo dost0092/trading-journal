@@ -6,7 +6,8 @@ Gold (XAU/USD) trading journal — React, Tailwind, Supabase auth, deployable on
 
 - Dashboard, Entry Trade, Daily / Weekly / Monthly reports, Strategy playbook
 - Login & signup (Supabase Auth, free tier)
-- Roles: **user** and **superadmin**
+- **User approval** — new users sign up freely; superadmin approves access
+- Roles: **user** and **superadmin** (two fixed superadmin emails)
 - Light minimal UI, strategy filters, calendar stars, trade cards
 
 ## Tech Stack
@@ -47,25 +48,30 @@ VITE_SUPABASE_URL=https://xxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
 ```
 
-6. Open **SQL Editor** in Supabase and run the full script in:
-
-   `supabase/schema.sql`
-
-   This creates `profiles` (with roles), `trades` table, RLS policies, and auto-profile on signup.
+6. Open **SQL Editor** in Supabase:
+   - **New project:** run `supabase/schema.sql`
+   - **Already ran old schema:** run `supabase/migration_user_approval.sql`
 
 7. **Authentication → Providers → Email** — leave Email enabled (default).
 
-8. **Optional:** disable “Confirm email” under Auth settings if you want instant login without email confirmation (dev only).
+8. **Optional:** disable “Confirm email” under Auth settings for instant login (testing).
 
-9. **Sign up** once in the app, then in SQL Editor make yourself superadmin:
+9. **Superadmin accounts** (auto-approved on signup):
+   - `waqasdostdost0092@gmail.com`
+   - `waqaskhan.dost0092@gmail.com`
+
+   If you signed up before running the migration, run:
 
 ```sql
 update public.profiles
-set role = 'superadmin'
-where email = 'your@email.com';
+set role = 'superadmin', status = 'approved'
+where lower(email) in (
+  'waqasdostdost0092@gmail.com',
+  'waqaskhan.dost0092@gmail.com'
+);
 ```
 
-Regular users get `role = 'user'` automatically on signup.
+Regular users sign up → status `pending` → superadmin approves in **Manage Users**.
 
 Restart dev server after adding `.env`:
 
@@ -122,14 +128,16 @@ npm run preview
 
 ---
 
-## Roles
+## Roles & access
 
 | Role | Access |
 |------|--------|
-| **user** | Own profile and trades (when synced to DB) |
-| **superadmin** | Can read all profiles and trades (RLS in schema) |
+| **user (pending)** | Can sign up / sign in; sees “Waiting for approval” |
+| **user (approved)** | Full journal access |
+| **user (rejected)** | Sign in blocked with “Access denied” |
+| **superadmin** | Full access + **Manage Users** to approve/reject |
 
-Superadmin is set manually in Supabase SQL after first signup.
+Superadmins: `waqasdostdost0092@gmail.com`, `waqaskhan.dost0092@gmail.com`
 
 ---
 

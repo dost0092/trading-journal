@@ -1,10 +1,11 @@
--- Run this in Supabase Dashboard → SQL Editor
+-- Run this in Supabase Dashboard → SQL Editor (fresh project)
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text,
   full_name text,
   role text not null default 'user' check (role in ('user', 'superadmin')),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
   created_at timestamptz not null default now()
 );
 
@@ -27,19 +28,40 @@ create policy "Superadmin can read all profiles"
     )
   );
 
--- Auto-create profile on signup
+create policy "Superadmin can update all profiles"
+  on public.profiles for update
+  using (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.role = 'superadmin'
+    )
+  );
+
+-- Auto-create profile on signup; superadmin emails get instant access
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
+declare
+  user_role text := 'user';
+  user_status text := 'pending';
 begin
-  insert into public.profiles (id, email, full_name, role)
+  if lower(new.email) in (
+    'waqasdostdost0092@gmail.com',
+    'waqaskhan.dost0092@gmail.com'
+  ) then
+    user_role := 'superadmin';
+    user_status := 'approved';
+  end if;
+
+  insert into public.profiles (id, email, full_name, role, status)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
-    'user'
+    user_role,
+    user_status
   );
   return new;
 end;
@@ -50,10 +72,6 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- Make yourself superadmin (replace with your email after signup):
--- update public.profiles set role = 'superadmin' where email = 'you@email.com';
-
--- Future: trades table (ready for next step)
 create table if not exists public.trades (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,

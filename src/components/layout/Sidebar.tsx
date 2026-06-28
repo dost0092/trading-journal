@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   PenLine,
   Settings,
+  Shield,
   TrendingUp,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -25,6 +26,8 @@ const NAV = [
   { to: '/strategy', label: 'Full Strategy', icon: BookOpen },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
+
+const ADMIN_NAV = [{ to: '/admin/users', label: 'Manage Users', icon: Shield }]
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { stats } = useTrades()
@@ -85,6 +88,35 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             )}
           </NavLink>
         ))}
+
+        {isSuperAdmin &&
+          ADMIN_NAV.map(({ to, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              onClick={onNavigate}
+              className={({ isActive }) =>
+                cn(
+                  'group flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200',
+                  isActive
+                    ? 'bg-primary/8 text-primary'
+                    : 'text-muted hover:bg-secondary hover:text-foreground',
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon
+                    className={cn(
+                      'h-4 w-4 transition-colors',
+                      isActive ? 'text-primary' : 'text-muted-foreground',
+                    )}
+                  />
+                  {label}
+                </>
+              )}
+            </NavLink>
+          ))}
       </nav>
 
       <div className="p-4">

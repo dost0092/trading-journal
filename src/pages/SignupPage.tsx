@@ -33,10 +33,11 @@ export function SignupPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="w-full max-w-sm space-y-4 text-center">
-          <h1 className="text-xl font-semibold">Check your email</h1>
+          <h1 className="text-xl font-semibold">Account created</h1>
           <p className="text-sm text-muted">
-            We sent a confirmation link to <strong>{email}</strong>. Confirm your email, then sign
-            in.
+            We sent a confirmation link to <strong>{email}</strong> if email confirmation is
+            enabled. After confirming, sign in — a superadmin will approve your access before you
+            can use the journal.
           </p>
           <Button onClick={() => navigate('/login')} className="w-full">
             Go to sign in

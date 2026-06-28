@@ -10,10 +10,19 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
   : null
 
 export type UserRole = 'user' | 'superadmin'
+export type UserStatus = 'pending' | 'approved' | 'rejected'
 
 export interface UserProfile {
   id: string
   email: string | null
   full_name: string | null
   role: UserRole
+  status: UserStatus
+  created_at?: string
+}
+
+export function isProfileApproved(profile: UserProfile | null): boolean {
+  if (!profile) return false
+  if (profile.role === 'superadmin') return true
+  return profile.status === 'approved'
 }
