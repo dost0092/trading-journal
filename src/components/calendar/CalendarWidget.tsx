@@ -24,8 +24,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useTrades } from '@/context/TradeContext'
+import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import { QualityStar } from '@/components/calendar/QualityStar'
-import { STRATEGY_LABELS } from '@/data/strategies'
 import { getRuleCount, getStarTier } from '@/lib/tradeUtils'
 import { getTradeCountForDate, getTradesForDate } from '@/data/mockData'
 
@@ -163,6 +163,7 @@ function CalendarLegend({ className }: { className?: string }) {
 
 function SelectedDayTrades() {
   const { trades, selectedDate } = useTrades()
+  const { getStrategyName } = useStrategyConfig()
 
   if (!selectedDate) {
     return (
@@ -214,7 +215,7 @@ function SelectedDayTrades() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">
-                      {STRATEGY_LABELS[trade.strategy]}
+                      {getStrategyName(trade.strategy)}
                     </span>
                     <Badge
                       variant={

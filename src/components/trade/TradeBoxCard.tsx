@@ -2,8 +2,8 @@ import { format, parseISO } from 'date-fns'
 import { Check, ImageIcon, X } from 'lucide-react'
 import { DialogRoot } from '@/components/ui/dialog'
 import { QualityStar } from '@/components/calendar/QualityStar'
+import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import { PLACEHOLDER_RULES } from '@/data/strategies'
-import { STRATEGY_LABELS } from '@/data/strategies'
 import { getRuleCount, getStarTier } from '@/lib/tradeUtils'
 import { RULE_IDS, type TradeEntry } from '@/types/trade'
 import { cn } from '@/lib/utils'
@@ -26,7 +26,8 @@ const RESULT_STYLE = {
 
 /** 50/50 box — image left, minimal details right */
 export function TradeBoxCard({ trade, onClick, active }: TradeBoxCardProps) {
-  const strategyName = STRATEGY_LABELS[trade.strategy]
+  const { getStrategyName } = useStrategyConfig()
+  const strategyName = getStrategyName(trade.strategy)
   const resultLabel =
     trade.result === 'breakeven' ? 'Break Even' : trade.result
   const ruleCount = getRuleCount(trade)
@@ -90,6 +91,7 @@ interface TradeDetailModalProps {
 }
 
 export function TradeDetailModal({ trade, open, onClose }: TradeDetailModalProps) {
+  const { getStrategyName } = useStrategyConfig()
   if (!trade) return null
 
   const ruleCount = getRuleCount(trade)
@@ -102,7 +104,7 @@ export function TradeDetailModal({ trade, open, onClose }: TradeDetailModalProps
       open={open}
       onOpenChange={(v) => !v && onClose()}
       title="Trade Details"
-      description={STRATEGY_LABELS[trade.strategy]}
+      description={getStrategyName(trade.strategy)}
       className="max-w-md"
     >
       {/* 50/50 — pic + summary */}

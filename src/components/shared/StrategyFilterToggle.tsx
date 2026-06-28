@@ -1,11 +1,6 @@
-import type { StrategyFilter } from '@/types/trade'
-import { STRATEGIES } from '@/data/strategies'
+import type { StrategyFilter, StrategyId } from '@/types/trade'
+import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import { cn } from '@/lib/utils'
-
-const OPTIONS: { id: StrategyFilter; label: string }[] = [
-  { id: 'all', label: 'All' },
-  ...STRATEGIES.map((s) => ({ id: s.id, label: s.name })),
-]
 
 interface StrategyFilterToggleProps {
   value: StrategyFilter
@@ -13,11 +8,20 @@ interface StrategyFilterToggleProps {
   className?: string
 }
 
+const STRATEGY_IDS: StrategyId[] = ['liquidity_sweep', 'liquidity_run']
+
 export function StrategyFilterToggle({
   value,
   onChange,
   className,
 }: StrategyFilterToggleProps) {
+  const { getStrategyName } = useStrategyConfig()
+
+  const options: { id: StrategyFilter; label: string }[] = [
+    { id: 'all', label: 'All' },
+    ...STRATEGY_IDS.map((id) => ({ id, label: getStrategyName(id) })),
+  ]
+
   return (
     <div
       className={cn(
@@ -25,7 +29,7 @@ export function StrategyFilterToggle({
         className,
       )}
     >
-      {OPTIONS.map(({ id, label }) => (
+      {options.map(({ id, label }) => (
         <button
           key={id}
           type="button"
