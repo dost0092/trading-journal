@@ -2,49 +2,54 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
-import { getSavedRules, saveRules, type TradeRule } from '@/lib/ruleStorage'
+import { useAuth } from '@/context/AuthContext'
+import type { TradeRule } from '@/lib/ruleStorage'
 import {
-  getSavedStrategyNames,
-  saveStrategyNames,
-} from '@/lib/strategyStorage'
+  fetchUserStrategyConfig,
+  getDefaultSetup,
+  saveUserStrategyConfig,
+  type StrategySetup,
+} from '@/lib/strategyConfigService'
 import type { StrategyId } from '@/types/trade'
-
-const STRATEGY_IDS: StrategyId[] = ['liquidity_sweep', 'liquidity_run']
-
-interface StrategySetup {
-  names: Record<StrategyId, string>
-  rulesByStrategy: Record<StrategyId, TradeRule[]>
-}
 
 interface StrategyConfigContextValue {
   strategyNames: Record<StrategyId, string>
   getStrategyName: (id: StrategyId) => string
   getRules: (strategy: StrategyId) => TradeRule[]
   getSetup: () => StrategySetup
-  saveSetup: (setup: StrategySetup) => void
-  refresh: () => void
+  saveSetup: (setup: StrategySetup) => Promise<string | null>
+  refresh: () => Promise<void>
+  loading: boolean
 }
 
 const StrategyConfigContext = createContext<StrategyConfigContextValue | null>(null)
 
-function loadSetup(): StrategySetup {
-  return {
-    names: getSavedStrategyNames(),
-    rulesByStrategy: {
-      liquidity_sweep: getSavedRules('liquidity_sweep'),
-      liquidity_run: getSavedRules('liquidity_run'),
-    },
-  }
-}
-
 export function StrategyConfigProvider({ children }: { children: ReactNode }) {
-  const [version, setVersion] = useState(0)
+  const { session, isApproved } = useAuth()
+  const [setup, setSetup] = useState<StrategySetup>(getDefaultSetup)
+  const [loading, setLoading] = useState(true)
 
-  const setup = useMemo(() => loadSetup(), [version])
+  const refresh = useCallback(async () => {
+    if (!session || !isApproved) {
+      setSetup(getDefaultSetup())
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    const config = await fetchUserStrategyConfig()
+    setSetup(config)
+    setLoading(false)
+  }, [session, isApproved])
+
+  useEffect(() => {
+    refresh()
+  }, [refresh])
 
   const getStrategyName = useCallback(
     (id: StrategyId) => setup.names[id],
@@ -58,15 +63,11 @@ export function StrategyConfigProvider({ children }: { children: ReactNode }) {
 
   const getSetup = useCallback(() => setup, [setup])
 
-  const saveSetup = useCallback((next: StrategySetup) => {
-    saveStrategyNames(next.names)
-    for (const id of STRATEGY_IDS) {
-      saveRules(id, next.rulesByStrategy[id])
-    }
-    setVersion((v) => v + 1)
+  const saveSetup = useCallback(async (next: StrategySetup) => {
+    const err = await saveUserStrategyConfig(next)
+    if (!err) setSetup(next)
+    return err
   }, [])
-
-  const refresh = useCallback(() => setVersion((v) => v + 1), [])
 
   const value = useMemo(
     () => ({
@@ -76,8 +77,9 @@ export function StrategyConfigProvider({ children }: { children: ReactNode }) {
       getSetup,
       saveSetup,
       refresh,
+      loading,
     }),
-    [setup, getStrategyName, getRules, getSetup, saveSetup, refresh],
+    [setup, getStrategyName, getRules, getSetup, saveSetup, refresh, loading],
   )
 
   return (

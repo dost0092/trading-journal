@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
+import { AuthThemeToggle } from '@/components/theme/AuthThemeToggle'
 
 export function LoginPage() {
   const { signIn } = useAuth()
@@ -29,6 +30,7 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <AuthThemeToggle />
       <div className="w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center gap-2 text-center">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">

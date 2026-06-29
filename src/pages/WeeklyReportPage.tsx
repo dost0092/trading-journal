@@ -15,7 +15,7 @@ import {
 import { CalendarWidget } from '@/components/calendar/CalendarWidget'
 import { ChartCard } from '@/components/dashboard/ChartCard'
 import { TradeBoxCard, TradeDetailModal } from '@/components/trade/TradeBoxCard'
-import { calcStats } from '@/data/mockData'
+import { calcStats } from '@/lib/tradeStats'
 import { useTrades } from '@/context/TradeContext'
 import {
   buildWeeklyBreakdown,

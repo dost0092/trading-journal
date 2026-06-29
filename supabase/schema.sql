@@ -151,6 +151,7 @@ create table if not exists public.trades (
   result text not null,
   strategy text not null,
   rules_met jsonb not null default '[]',
+  rule_labels jsonb not null default '{}',
   image_url text,
   created_at timestamptz not null default now()
 );
@@ -165,3 +166,21 @@ create policy "Users manage own trades"
 create policy "Superadmin read all trades"
   on public.trades for select
   using (public.is_superadmin());
+
+create table if not exists public.user_strategy_configs (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  strategy_names jsonb not null,
+  rules_by_strategy jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.user_strategy_configs enable row level security;
+
+create policy "Users manage own strategy config"
+  on public.user_strategy_configs for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+insert into storage.buckets (id, name, public)
+values ('trade-images', 'trade-images', true)
+on conflict (id) do nothing;

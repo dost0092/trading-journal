@@ -5,6 +5,7 @@ import { resolveDisplayName, resolveInitials } from '@/lib/authUtils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { CalendarHeaderButton } from '@/components/calendar/CalendarWidget'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
 
 const TITLES: Record<string, string> = {
   '/': 'Dashboard',
@@ -54,6 +55,8 @@ export function Header({ pathname }: { pathname: string }) {
         >
           <Bell className="h-4 w-4" />
         </button>
+
+        <ThemeToggle />
 
         {isSuperAdmin && (
           <Link

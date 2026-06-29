@@ -11,6 +11,15 @@
       rel="stylesheet"
     />
     <title>Trading Journal</title>
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('trading-journal-theme') === 'dark') {
+            document.documentElement.classList.add('dark')
+          }
+        } catch (_) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

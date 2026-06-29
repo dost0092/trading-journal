@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LogOut, Shield } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
-import { isSupabaseConfigured } from '@/lib/supabase'
 import { resolveDisplayName } from '@/lib/authUtils'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input, Label } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
+import { useTheme } from '@/context/ThemeContext'
 
 export function SettingsPage() {
   const {
@@ -21,6 +22,7 @@ export function SettingsPage() {
     updateProfileName,
     refreshProfile,
   } = useAuth()
+  const { isDark } = useTheme()
 
   const email = profile?.email ?? user?.email ?? session?.user?.email ?? ''
   const displayName = resolveDisplayName(profile, email)
@@ -49,6 +51,18 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-md space-y-6 py-4">
+      <Card className="shadow-none">
+        <CardContent className="flex items-center justify-between gap-4 p-6">
+          <div>
+            <p className="text-sm font-semibold">Appearance</p>
+            <p className="mt-0.5 text-xs text-muted">
+              {isDark ? 'Dark mode' : 'Light mode'}
+            </p>
+          </div>
+          <ThemeToggle />
+        </CardContent>
+      </Card>
+
       <Card className="shadow-none">
         <CardContent className="space-y-5 p-6">
           <div className="flex items-center justify-between gap-3">
@@ -83,13 +97,13 @@ export function SettingsPage() {
             )}
 
             {profileError && (
-              <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <p className="rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning">
                 Profile sync issue: {profileError}. Run fix_auth_rls.sql in Supabase, then refresh.
               </p>
             )}
 
             {error && <p className="text-sm text-destructive">{error}</p>}
-            {message && <p className="text-sm text-emerald-600">{message}</p>}
+            {message && <p className="text-sm text-success">{message}</p>}
 
             <div className="flex flex-col gap-2 sm:flex-row">
               {session && (
@@ -116,12 +130,6 @@ export function SettingsPage() {
               <Shield className="h-4 w-4 text-primary" />
               Manage Users
             </Link>
-          )}
-
-          {!isSupabaseConfigured && (
-            <p className="text-xs text-muted">
-              Demo mode — add Supabase env vars and redeploy on Vercel for login.
-            </p>
           )}
 
           {session && (

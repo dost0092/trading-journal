@@ -19,6 +19,7 @@ export function ImageUpload({ image, onChange }: ImageUploadProps) {
         id: crypto.randomUUID(),
         name: file.name,
         previewUrl: URL.createObjectURL(file),
+        file,
       })
     },
     [image, onChange],

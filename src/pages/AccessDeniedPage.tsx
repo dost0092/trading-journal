@@ -1,5 +1,6 @@
 import { ShieldX } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
+import { AuthThemeToggle } from '@/components/theme/AuthThemeToggle'
 import { Button } from '@/components/ui/button'
 
 export function AccessDeniedPage() {
@@ -7,6 +8,7 @@ export function AccessDeniedPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <AuthThemeToggle />
       <div className="w-full max-w-md space-y-6 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10">
           <ShieldX className="h-6 w-6 text-destructive" />

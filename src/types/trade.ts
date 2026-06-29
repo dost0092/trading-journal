@@ -8,6 +8,7 @@ export interface TradeImage {
   id: string
   name: string
   previewUrl: string
+  file?: File
 }
 
 export interface TradeEntry {

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", -apple-system, "SF Pro Display", "Segoe UI", sans-serif;
 
@@ -11,6 +13,7 @@
   --color-success: #22c55e;
   --color-danger: #ef4444;
   --color-warning: #f59e0b;
+  --color-destructive: #ef4444;
   --color-muted: #6b7280;
   --color-muted-foreground: #9ca3af;
   --color-foreground: #111827;
@@ -25,6 +28,24 @@ html {
   color-scheme: light;
 }
 
+html.dark {
+  color-scheme: dark;
+
+  --color-background: #0c0e12;
+  --color-card: #151820;
+  --color-border: #2a3040;
+  --color-primary: #5b9aff;
+  --color-primary-foreground: #ffffff;
+  --color-success: #34d399;
+  --color-danger: #f87171;
+  --color-warning: #fbbf24;
+  --color-destructive: #f87171;
+  --color-muted: #9ca3af;
+  --color-muted-foreground: #6b7280;
+  --color-foreground: #f3f4f6;
+  --color-secondary: #1c2130;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -33,6 +54,9 @@ body {
   color: var(--color-foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
 }
 
 #root {
@@ -51,4 +75,8 @@ body {
 ::-webkit-scrollbar-thumb {
   background: #d1d5db;
   border-radius: 999px;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #3f4658;
 }

@@ -27,7 +27,7 @@ import { useTrades } from '@/context/TradeContext'
 import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import { QualityStar } from '@/components/calendar/QualityStar'
 import { getRuleCount, getStarTier } from '@/lib/tradeUtils'
-import { getTradeCountForDate, getTradesForDate } from '@/data/mockData'
+import { getTradeCountForDate, getTradesForDate } from '@/lib/tradeStats'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const WEEKDAYS_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']

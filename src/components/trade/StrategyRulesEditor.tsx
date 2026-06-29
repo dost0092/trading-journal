@@ -27,6 +27,7 @@ export function StrategyRulesEditor({
     Record<StrategyId, TradeRule[]>
   >(() => getSetup().rulesByStrategy)
   const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -47,7 +48,7 @@ export function StrategyRulesEditor({
     }))
   }
 
-  function handleSave() {
+  async function handleSave() {
     const trimmedNames = {
       liquidity_sweep: names.liquidity_sweep.trim(),
       liquidity_run: names.liquidity_run.trim(),
@@ -69,7 +70,14 @@ export function StrategyRulesEditor({
       {} as Record<StrategyId, TradeRule[]>,
     )
 
-    saveSetup({ names: trimmedNames, rulesByStrategy: cleanedRules })
+    setSaving(true)
+    setError(null)
+    const err = await saveSetup({ names: trimmedNames, rulesByStrategy: cleanedRules })
+    setSaving(false)
+    if (err) {
+      setError(err)
+      return
+    }
     onSaved?.()
     onOpenChange(false)
   }
@@ -125,9 +133,9 @@ export function StrategyRulesEditor({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="button" onClick={handleSave}>
+          <Button type="button" onClick={handleSave} disabled={saving}>
             <PencilLine className="mr-2 h-4 w-4" />
-            Save
+            {saving ? 'Saving...' : 'Save'}
           </Button>
         </div>
       </div>

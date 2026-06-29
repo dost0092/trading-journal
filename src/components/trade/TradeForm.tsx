@@ -23,7 +23,8 @@ import { cn } from '@/lib/utils'
 interface TradeFormProps {
   image: TradeImage | null
   onImageChange: (image: TradeImage | null) => void
-  onSubmit: (data: TradeFormSchema, image: TradeImage | null) => void
+  onSubmit: (data: TradeFormSchema, image: TradeImage | null) => void | Promise<void>
+  saving?: boolean
 }
 
 const STRATEGY_IDS: StrategyId[] = ['liquidity_sweep', 'liquidity_run']
@@ -32,7 +33,7 @@ function emptyRulesMet(): Record<string, boolean> {
   return Object.fromEntries(RULE_IDS.map((id) => [id, false]))
 }
 
-export function TradeForm({ image, onImageChange, onSubmit }: TradeFormProps) {
+export function TradeForm({ image, onImageChange, onSubmit, saving = false }: TradeFormProps) {
   const { getStrategyName, getRules, refresh } = useStrategyConfig()
   const [editorOpen, setEditorOpen] = useState(false)
   const [rules, setRules] = useState(() => getRules(defaultTradeFormValues.strategy))
@@ -98,7 +99,7 @@ export function TradeForm({ image, onImageChange, onSubmit }: TradeFormProps) {
                 className={cn(
                   'rounded-2xl border-2 px-6 py-5 text-left transition-all duration-200',
                   values.strategy === id
-                    ? 'border-primary bg-blue-50/40 shadow-sm'
+                    ? 'border-primary bg-primary/10 shadow-sm'
                     : 'border-border bg-card hover:border-primary/25',
                 )}
               >
@@ -214,8 +215,8 @@ export function TradeForm({ image, onImageChange, onSubmit }: TradeFormProps) {
                       'flex-1 rounded-xl border py-2.5 text-sm font-medium capitalize transition',
                       values.direction === d
                         ? d === 'buy'
-                          ? 'border-success/50 bg-green-50 text-success'
-                          : 'border-danger/50 bg-red-50 text-danger'
+                          ? 'border-success/50 bg-success/10 text-success'
+                          : 'border-danger/50 bg-danger/10 text-danger'
                         : 'border-border hover:bg-secondary',
                     )}
                   >
@@ -237,9 +238,9 @@ export function TradeForm({ image, onImageChange, onSubmit }: TradeFormProps) {
                       'flex-1 rounded-xl border py-2.5 text-sm font-medium capitalize transition',
                       values.result === r
                         ? r === 'win'
-                          ? 'border-success/50 bg-green-50 text-success'
+                          ? 'border-success/50 bg-success/10 text-success'
                           : r === 'loss'
-                            ? 'border-danger/50 bg-red-50 text-danger'
+                            ? 'border-danger/50 bg-danger/10 text-danger'
                             : 'border-border bg-secondary'
                         : 'border-border hover:bg-secondary',
                     )}
@@ -257,9 +258,9 @@ export function TradeForm({ image, onImageChange, onSubmit }: TradeFormProps) {
           <ImageUpload image={image} onChange={onImageChange} />
         </div>
 
-        <Button type="submit" size="lg" className="w-full sm:w-auto">
-          Save Trade
-        </Button>
+      <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={saving}>
+        {saving ? 'Saving...' : 'Save Trade'}
+      </Button>
       </form>
 
       <StrategyRulesEditor

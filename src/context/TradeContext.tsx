@@ -2,22 +2,31 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
-import { MOCK_TRADES, calcStats } from '@/data/mockData'
+import { useAuth } from '@/context/AuthContext'
+import { calcStats } from '@/lib/tradeStats'
+import { createTrade, fetchUserTrades, removeTrade } from '@/lib/tradeService'
 import { filterByStrategy } from '@/lib/tradeUtils'
 import type { StrategyFilter, TradeEntry, TradeImage } from '@/types/trade'
 
 interface TradeContextValue {
   trades: TradeEntry[]
+  loading: boolean
+  error: string | null
   selectedDate: string | null
   setSelectedDate: (date: string | null) => void
   strategyFilter: StrategyFilter
   setStrategyFilter: (f: StrategyFilter) => void
-  addTrade: (trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair'>) => void
-  deleteTrade: (id: string) => void
+  addTrade: (
+    trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair' | 'image'>,
+    image: TradeImage | null,
+  ) => Promise<string | null>
+  deleteTrade: (id: string) => Promise<string | null>
+  refreshTrades: () => Promise<void>
   stats: ReturnType<typeof calcStats>
   filteredTrades: TradeEntry[]
   filteredByStrategy: TradeEntry[]
@@ -26,25 +35,49 @@ interface TradeContextValue {
 const TradeContext = createContext<TradeContextValue | null>(null)
 
 export function TradeProvider({ children }: { children: ReactNode }) {
-  const [trades, setTrades] = useState<TradeEntry[]>(MOCK_TRADES)
+  const { session, isApproved } = useAuth()
+  const [trades, setTrades] = useState<TradeEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [strategyFilter, setStrategyFilter] = useState<StrategyFilter>('all')
 
+  const refreshTrades = useCallback(async () => {
+    if (!session || !isApproved) {
+      setTrades([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    const { trades: list, error: fetchError } = await fetchUserTrades()
+    setTrades(list)
+    setError(fetchError)
+    setLoading(false)
+  }, [session, isApproved])
+
+  useEffect(() => {
+    refreshTrades()
+  }, [refreshTrades])
+
   const addTrade = useCallback(
-    (trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair'>) => {
-      const entry: TradeEntry = {
-        ...trade,
-        pair: 'XAU/USD',
-        id: crypto.randomUUID(),
-        createdAt: new Date().toISOString(),
-      }
-      setTrades((prev) => [entry, ...prev])
+    async (
+      trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair' | 'image'>,
+      image: TradeImage | null,
+    ) => {
+      const { trade: saved, error: saveError } = await createTrade(trade, image)
+      if (saveError) return saveError
+      if (saved) setTrades((prev) => [saved, ...prev])
+      return null
     },
     [],
   )
 
-  const deleteTrade = useCallback((id: string) => {
+  const deleteTrade = useCallback(async (id: string) => {
+    const err = await removeTrade(id)
+    if (err) return err
     setTrades((prev) => prev.filter((t) => t.id !== id))
+    return null
   }, [])
 
   const filteredByStrategy = useMemo(
@@ -63,31 +96,35 @@ export function TradeProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       trades,
+      loading,
+      error,
       selectedDate,
       setSelectedDate,
       strategyFilter,
       setStrategyFilter,
       addTrade,
       deleteTrade,
+      refreshTrades,
       stats,
       filteredTrades,
       filteredByStrategy,
     }),
     [
       trades,
+      loading,
+      error,
       selectedDate,
       strategyFilter,
       addTrade,
       deleteTrade,
+      refreshTrades,
       stats,
       filteredTrades,
       filteredByStrategy,
     ],
   )
 
-  return (
-    <TradeContext.Provider value={value}>{children}</TradeContext.Provider>
-  )
+  return <TradeContext.Provider value={value}>{children}</TradeContext.Provider>
 }
 
 export function useTrades() {

@@ -1,5 +1,6 @@
 import { Clock } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
+import { AuthThemeToggle } from '@/components/theme/AuthThemeToggle'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -8,6 +9,7 @@ export function PendingApprovalPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <AuthThemeToggle />
       <div className="w-full max-w-md space-y-6 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
           <Clock className="h-6 w-6 text-primary" />

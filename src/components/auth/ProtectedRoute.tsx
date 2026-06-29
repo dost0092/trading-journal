@@ -11,6 +11,21 @@ function LoadingScreen() {
   )
 }
 
+function ConfigMissingScreen() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md space-y-3 text-center">
+        <h1 className="text-lg font-semibold">Configuration required</h1>
+        <p className="text-sm text-muted">
+          Add <code className="text-xs">VITE_SUPABASE_URL</code> and{' '}
+          <code className="text-xs">VITE_SUPABASE_ANON_KEY</code> to your environment, then
+          redeploy.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function pendingRedirect(
   profile: ReturnType<typeof useAuth>['profile'],
   isApproved: boolean,
@@ -28,7 +43,7 @@ export function ProtectedRoute() {
   const location = useLocation()
   const email = profile?.email ?? session?.user?.email
 
-  if (!isSupabaseConfigured) return <Outlet />
+  if (!isSupabaseConfigured) return <ConfigMissingScreen />
   if (loading) return <LoadingScreen />
   if (!session) return <Navigate to="/login" replace state={{ from: location.pathname }} />
 
@@ -42,7 +57,7 @@ export function PublicOnlyRoute() {
   const { session, profile, isApproved, loading } = useAuth()
   const email = profile?.email ?? session?.user?.email
 
-  if (!isSupabaseConfigured) return <Navigate to="/" replace />
+  if (!isSupabaseConfigured) return <ConfigMissingScreen />
   if (loading) return <LoadingScreen />
   if (!session) return <Outlet />
 
@@ -55,7 +70,7 @@ export function PublicOnlyRoute() {
 export function PendingRoute() {
   const { session, profile, isApproved, loading } = useAuth()
 
-  if (!isSupabaseConfigured) return <Navigate to="/" replace />
+  if (!isSupabaseConfigured) return <ConfigMissingScreen />
   if (loading) return <LoadingScreen />
   if (!session) return <Navigate to="/login" replace />
   if (isApproved) return <Navigate to="/" replace />
@@ -68,7 +83,7 @@ export function SuperAdminGate() {
   const { session, isSuperAdmin, isApproved, loading } = useAuth()
   const location = useLocation()
 
-  if (!isSupabaseConfigured) return <Navigate to="/" replace />
+  if (!isSupabaseConfigured) return <ConfigMissingScreen />
   if (loading) return <LoadingScreen />
   if (!session) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   if (!isApproved) return <Navigate to="/pending-approval" replace />

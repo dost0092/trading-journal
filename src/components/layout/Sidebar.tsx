@@ -16,7 +16,6 @@ import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { useTrades } from '@/context/TradeContext'
 import { useAuth } from '@/context/AuthContext'
-import { isSupabaseConfigured } from '@/lib/supabase'
 import { resolveDisplayName, resolveInitials } from '@/lib/authUtils'
 
 const NAV = [
@@ -129,7 +128,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               <p className="truncate text-[11px] text-muted">
                 {isSuperAdmin ? 'Superadmin · ' : ''}
                 XAU/USD · {stats.winRate}% win
-                {!isSupabaseConfigured && ' · demo'}
               </p>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from '@/context/AuthContext'
 import { StrategyConfigProvider } from '@/context/StrategyConfigContext'
+import { ThemeProvider } from '@/context/ThemeContext'
 import { TradeProvider } from '@/context/TradeContext'
 import {
   PendingRoute,
@@ -24,11 +25,12 @@ import { AdminUsersPage } from '@/pages/AdminUsersPage'
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <StrategyConfigProvider>
-          <TradeProvider>
-          <Routes>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <StrategyConfigProvider>
+            <TradeProvider>
+              <Routes>
             <Route element={<PublicOnlyRoute />}>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
@@ -51,10 +53,11 @@ export default function App() {
                 </Route>
               </Route>
             </Route>
-          </Routes>
-          </TradeProvider>
-        </StrategyConfigProvider>
-      </AuthProvider>
-    </BrowserRouter>
+              </Routes>
+            </TradeProvider>
+          </StrategyConfigProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }

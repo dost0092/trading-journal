@@ -1,6 +1,6 @@
 import { isSameMonth, isToday } from 'date-fns'
 import { QualityStars } from '@/components/calendar/QualityStar'
-import { getTradesForDate } from '@/data/mockData'
+import { getTradesForDate } from '@/lib/tradeStats'
 import { getRuleCount, getStarTier } from '@/lib/tradeUtils'
 import type { TradeEntry } from '@/types/trade'
 import { cn } from '@/lib/utils'

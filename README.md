@@ -29,7 +29,7 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173)
 
-Without `.env`, the app runs in **demo mode** (no login required).
+Requires Supabase env vars — each user gets their own journal, trades, and strategy rules.
 
 ---
 
@@ -51,7 +51,8 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
 6. Open **SQL Editor** in Supabase:
    - **New project:** run `supabase/schema.sql`
    - **Already ran old schema:** run `supabase/migration_user_approval.sql`
-   - **Auth / user management not working:** run `supabase/fix_auth_rls.sql` ← **run this if superadmin or Manage Users fails**
+   - **Auth / user management not working:** run `supabase/fix_auth_rls.sql`
+   - **Per-user trades & rules:** run `supabase/migration_user_data.sql`
 
 7. **Authentication → Providers → Email** — leave Email enabled (default).
 

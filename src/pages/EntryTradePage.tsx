@@ -11,28 +11,39 @@ import type { TradeImage } from '@/types/trade'
 export function EntryTradePage() {
   const [showForm, setShowForm] = useState(true)
   const [image, setImage] = useState<TradeImage | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const { addTrade } = useTrades()
   const navigate = useNavigate()
 
-  const handleSubmit = (data: TradeFormSchema, img: TradeImage | null) => {
-    addTrade({
-      date: data.date,
-      time: data.time,
-      session: data.session,
-      direction: data.direction,
-      riskPercent: data.riskPercent,
-      lotSize: data.lotSize,
-      entry: data.entry,
-      stopLoss: data.stopLoss,
-      takeProfit: data.takeProfit,
-      result: data.result,
-      strategy: data.strategy,
-      rulesMet: Object.entries(data.rulesMet)
-        .filter(([, v]) => v)
-        .map(([k]) => k),
-      ruleLabels: data.ruleLabels,
-      image: img,
-    })
+  const handleSubmit = async (data: TradeFormSchema, img: TradeImage | null) => {
+    setSaving(true)
+    setError(null)
+    const err = await addTrade(
+      {
+        date: data.date,
+        time: data.time,
+        session: data.session,
+        direction: data.direction,
+        riskPercent: data.riskPercent,
+        lotSize: data.lotSize,
+        entry: data.entry,
+        stopLoss: data.stopLoss,
+        takeProfit: data.takeProfit,
+        result: data.result,
+        strategy: data.strategy,
+        rulesMet: Object.entries(data.rulesMet)
+          .filter(([, v]) => v)
+          .map(([k]) => k),
+        ruleLabels: data.ruleLabels,
+      },
+      img,
+    )
+    setSaving(false)
+    if (err) {
+      setError(err)
+      return
+    }
     setImage(null)
     navigate('/daily')
   }
@@ -51,6 +62,10 @@ export function EntryTradePage() {
         )}
       </div>
 
+      {error && (
+        <p className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">{error}</p>
+      )}
+
       <AnimatePresence>
         {showForm && (
           <motion.div
@@ -58,7 +73,12 @@ export function EntryTradePage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
           >
-            <TradeForm image={image} onImageChange={setImage} onSubmit={handleSubmit} />
+            <TradeForm
+              image={image}
+              onImageChange={setImage}
+              onSubmit={handleSubmit}
+              saving={saving}
+            />
           </motion.div>
         )}
       </AnimatePresence>

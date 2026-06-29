@@ -16,8 +16,8 @@ import {
 import { StrategyFilterToggle } from '@/components/shared/StrategyFilterToggle'
 import { ChartCard } from '@/components/dashboard/ChartCard'
 import { Card, CardContent } from '@/components/ui/card'
-import { PERFORMANCE_WEEKS } from '@/data/mockData'
 import { useTrades } from '@/context/TradeContext'
+import { buildPerformanceWeeks } from '@/lib/tradeStats'
 
 const QUICK_NAV = [
   { to: '/daily', label: 'Daily Trade' },
@@ -26,14 +26,23 @@ const QUICK_NAV = [
 ]
 
 export function DashboardPage() {
-  const { stats, strategyFilter, setStrategyFilter } = useTrades()
+  const { stats, strategyFilter, setStrategyFilter, filteredByStrategy, loading } = useTrades()
 
   const pieData = [
     { name: 'Win', value: stats.wins, color: '#22C55E' },
     { name: 'Loss', value: stats.losses, color: '#EF4444' },
   ].filter((d) => d.value > 0)
 
-  const totalWeekTrades = PERFORMANCE_WEEKS.reduce((s, w) => s + w.trades, 0)
+  const performanceWeeks = buildPerformanceWeeks(filteredByStrategy)
+  const totalWeekTrades = performanceWeeks.reduce((s, w) => s + w.trades, 0)
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <p className="text-sm text-muted">Loading your journal...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-12 py-4">
@@ -82,8 +91,9 @@ export function DashboardPage() {
                   <Tooltip
                     contentStyle={{
                       borderRadius: 12,
-                      border: '1px solid #E8E8E8',
+                      border: '1px solid var(--color-border)',
                       fontSize: 12,
+                      background: 'var(--color-card)',
                     }}
                   />
                   <Legend
@@ -96,47 +106,54 @@ export function DashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-sm text-muted">No trades yet</p>
+              <p className="text-sm text-muted">No trades yet — log your first trade</p>
             )}
           </div>
         </ChartCard>
 
         <ChartCard
           title="Performance"
-          description={`${totalWeekTrades} trades over 6 weeks`}
+          description={`${totalWeekTrades} trades over last 6 weeks`}
         >
           <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={PERFORMANCE_WEEKS}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E8E8E8" vertical={false} />
-                <XAxis
-                  dataKey="week"
-                  tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: 12,
-                    border: '1px solid #E8E8E8',
-                    fontSize: 12,
-                  }}
-                  formatter={(v) => [`${v} trades`, 'Count']}
-                />
-                <Bar
-                  dataKey="trades"
-                  name="Trades"
-                  fill="#3B82F6"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            {totalWeekTrades > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={performanceWeeks}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                  <XAxis
+                    dataKey="week"
+                    tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
+                    axisLine={false}
+                    tickLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: '1px solid var(--color-border)',
+                      fontSize: 12,
+                      background: 'var(--color-card)',
+                    }}
+                    formatter={(v) => [`${v} trades`, 'Count']}
+                  />
+                  <Bar
+                    dataKey="trades"
+                    name="Trades"
+                    fill="var(--color-primary)"
+                    radius={[6, 6, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <p className="text-sm text-muted">Your weekly chart will appear here</p>
+              </div>
+            )}
           </div>
         </ChartCard>
       </div>
