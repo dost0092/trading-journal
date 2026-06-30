@@ -22,9 +22,15 @@ export async function fetchUserStrategyConfig(): Promise<StrategySetup> {
   const defaults = getDefaultSetup()
   if (!supabase) return defaults
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return defaults
+
   const { data, error } = await supabase
     .from('user_strategy_configs')
     .select('strategy_names, rules_by_strategy')
+    .eq('user_id', user.id)
     .maybeSingle()
 
   if (error || !data) return defaults

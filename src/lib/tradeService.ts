@@ -21,7 +21,27 @@ interface DbTradeRow {
   created_at: string
 }
 
-function rowToTrade(row: DbTradeRow): TradeEntry {
+function storagePathFromImageUrl(imageUrl: string): string {
+  if (imageUrl.includes('/trade-images/')) {
+    return imageUrl.split('/trade-images/')[1]?.split('?')[0] ?? imageUrl
+  }
+  return imageUrl
+}
+
+async function resolveTradeImageUrl(imageUrl: string | null): Promise<string | null> {
+  if (!imageUrl || !supabase) return null
+
+  const path = storagePathFromImageUrl(imageUrl)
+  const { data, error } = await supabase.storage
+    .from('trade-images')
+    .createSignedUrl(path, 60 * 60)
+
+  if (!error && data?.signedUrl) return data.signedUrl
+  if (imageUrl.startsWith('http')) return imageUrl
+  return null
+}
+
+function rowToTrade(row: DbTradeRow, imagePreviewUrl: string | null): TradeEntry {
   return {
     id: row.id,
     date: row.date,
@@ -38,11 +58,11 @@ function rowToTrade(row: DbTradeRow): TradeEntry {
     strategy: row.strategy as TradeEntry['strategy'],
     rulesMet: Array.isArray(row.rules_met) ? row.rules_met : [],
     ruleLabels: row.rule_labels ?? undefined,
-    image: row.image_url
+    image: imagePreviewUrl
       ? {
           id: row.id,
           name: 'screenshot',
-          previewUrl: row.image_url,
+          previewUrl: imagePreviewUrl,
         }
       : null,
     createdAt: row.created_at,
@@ -52,14 +72,29 @@ function rowToTrade(row: DbTradeRow): TradeEntry {
 export async function fetchUserTrades(): Promise<{ trades: TradeEntry[]; error: string | null }> {
   if (!supabase) return { trades: [], error: 'Supabase is not configured.' }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { trades: [], error: 'You must be signed in.' }
+
   const { data, error } = await supabase
     .from('trades')
     .select('*')
+    .eq('user_id', user.id)
     .order('date', { ascending: false })
     .order('time', { ascending: false })
 
   if (error) return { trades: [], error: error.message }
-  return { trades: (data as DbTradeRow[]).map(rowToTrade), error: null }
+
+  const rows = data as DbTradeRow[]
+  const trades = await Promise.all(
+    rows.map(async (row) => {
+      const previewUrl = await resolveTradeImageUrl(row.image_url)
+      return rowToTrade(row, previewUrl)
+    }),
+  )
+
+  return { trades, error: null }
 }
 
 async function uploadTradeImage(
@@ -80,8 +115,7 @@ async function uploadTradeImage(
 
   if (error) return null
 
-  const { data } = supabase.storage.from('trade-images').getPublicUrl(path)
-  return data.publicUrl
+  return path
 }
 
 export async function createTrade(
@@ -126,12 +160,19 @@ export async function createTrade(
     .single()
 
   if (error || !data) return { trade: null, error: error?.message ?? 'Failed to save trade.' }
-  return { trade: rowToTrade(data as DbTradeRow), error: null }
+
+  const previewUrl = imageUrl ? await resolveTradeImageUrl(imageUrl) : null
+  return { trade: rowToTrade(data as DbTradeRow, previewUrl), error: null }
 }
 
 export async function removeTrade(tradeId: string): Promise<string | null> {
   if (!supabase) return 'Supabase is not configured.'
 
-  const { error } = await supabase.from('trades').delete().eq('id', tradeId)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return 'You must be signed in.'
+
+  const { error } = await supabase.from('trades').delete().eq('id', tradeId).eq('user_id', user.id)
   return error?.message ?? null
 }

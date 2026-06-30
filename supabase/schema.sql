@@ -26,6 +26,46 @@ $$;
 
 grant execute on function public.is_superadmin() to authenticated;
 
+create or replace function public.is_approved()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid()
+      and (role = 'superadmin' or status = 'approved')
+  );
+$$;
+
+grant execute on function public.is_approved() to authenticated;
+
+create or replace function public.protect_profile_fields()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_superadmin() then
+    new.role := old.role;
+    new.status := old.status;
+    new.email := old.email;
+    new.id := old.id;
+    new.created_at := old.created_at;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_profile_before_update on public.profiles;
+create trigger protect_profile_before_update
+  before update on public.profiles
+  for each row
+  execute function public.protect_profile_fields();
+
 create policy "Users can read own profile"
   on public.profiles for select
   using (auth.uid() = id);
@@ -158,10 +198,10 @@ create table if not exists public.trades (
 
 alter table public.trades enable row level security;
 
-create policy "Users manage own trades"
+create policy "Approved users manage own trades"
   on public.trades for all
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using (auth.uid() = user_id and public.is_approved())
+  with check (auth.uid() = user_id and public.is_approved());
 
 create policy "Superadmin read all trades"
   on public.trades for select
@@ -176,11 +216,43 @@ create table if not exists public.user_strategy_configs (
 
 alter table public.user_strategy_configs enable row level security;
 
-create policy "Users manage own strategy config"
+create policy "Approved users manage own strategy config"
   on public.user_strategy_configs for all
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using (auth.uid() = user_id and public.is_approved())
+  with check (auth.uid() = user_id and public.is_approved());
 
 insert into storage.buckets (id, name, public)
-values ('trade-images', 'trade-images', true)
-on conflict (id) do nothing;
+values ('trade-images', 'trade-images', false)
+on conflict (id) do update set public = false;
+
+create policy "Users upload own trade images"
+  on storage.objects for insert
+  to authenticated
+  with check (
+    bucket_id = 'trade-images'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "Users read own trade images"
+  on storage.objects for select
+  to authenticated
+  using (
+    bucket_id = 'trade-images'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "Users delete own trade images"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'trade-images'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "Users update own trade images"
+  on storage.objects for update
+  to authenticated
+  using (
+    bucket_id = 'trade-images'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
