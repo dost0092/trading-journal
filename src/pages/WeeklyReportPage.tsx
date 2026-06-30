@@ -15,6 +15,7 @@ import {
 import { CalendarWidget } from '@/components/calendar/CalendarWidget'
 import { ChartCard } from '@/components/dashboard/ChartCard'
 import { TradeBoxCard, TradeDetailModal } from '@/components/trade/TradeBoxCard'
+import { TradeEditDialog } from '@/components/trade/TradeEditDialog'
 import { calcStats } from '@/lib/tradeStats'
 import { useTrades } from '@/context/TradeContext'
 import {
@@ -25,8 +26,24 @@ import {
 import type { TradeEntry } from '@/types/trade'
 
 export function WeeklyReportPage() {
-  const { filteredByStrategy } = useTrades()
+  const { filteredByStrategy, deleteTrade } = useTrades()
   const [selected, setSelected] = useState<TradeEntry | null>(null)
+  const [editing, setEditing] = useState<TradeEntry | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleDelete(trade: TradeEntry) {
+    if (!window.confirm('Delete this trade? This cannot be undone.')) return
+    setDeleting(true)
+    setError(null)
+    const err = await deleteTrade(trade.id)
+    setDeleting(false)
+    if (err) {
+      setError(err)
+      return
+    }
+    setSelected(null)
+  }
 
   const weekTrades = useMemo(
     () => getTradesInWeek(filteredByStrategy),
@@ -49,6 +66,9 @@ export function WeeklyReportPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 py-4">
+      {error && (
+        <p className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">{error}</p>
+      )}
       <div>
         <p className="text-xs text-muted">Week of {formatWeekRange()}</p>
         <div className="mt-4 grid grid-cols-3 gap-6 text-center">
@@ -220,7 +240,15 @@ export function WeeklyReportPage() {
         trade={selected}
         open={!!selected}
         onClose={() => setSelected(null)}
+        onEdit={(trade) => {
+          setSelected(null)
+          setEditing(trade)
+        }}
+        onDelete={handleDelete}
+        deleting={deleting}
       />
+
+      <TradeEditDialog trade={editing} onClose={() => setEditing(null)} />
     </div>
   )
 }

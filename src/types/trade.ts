@@ -9,6 +9,8 @@ export interface TradeImage {
   name: string
   previewUrl: string
   file?: File
+  /** Storage path in trade-images bucket (for edits without re-uploading) */
+  storagePath?: string
 }
 
 export interface TradeEntry {

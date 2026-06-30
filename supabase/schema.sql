@@ -203,9 +203,7 @@ create policy "Approved users manage own trades"
   using (auth.uid() = user_id and public.is_approved())
   with check (auth.uid() = user_id and public.is_approved());
 
-create policy "Superadmin read all trades"
-  on public.trades for select
-  using (public.is_superadmin());
+-- Superadmins see only their own trades (same as regular users). No cross-user journal access.
 
 create table if not exists public.user_strategy_configs (
   user_id uuid primary key references auth.users (id) on delete cascade,

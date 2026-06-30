@@ -112,10 +112,8 @@ create policy "Approved users manage own trades"
   using (auth.uid() = user_id and public.is_approved())
   with check (auth.uid() = user_id and public.is_approved());
 
+-- Remove cross-user trade access for superadmins (each user sees only their own journal)
 drop policy if exists "Superadmin read all trades" on public.trades;
-create policy "Superadmin read all trades"
-  on public.trades for select
-  using (public.is_superadmin());
 
 -- ---------------------------------------------------------------------------
 -- 5. Strategy config policies — each user only sees/edits their own rules

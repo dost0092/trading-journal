@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
@@ -25,6 +25,8 @@ interface TradeFormProps {
   onImageChange: (image: TradeImage | null) => void
   onSubmit: (data: TradeFormSchema, image: TradeImage | null) => void | Promise<void>
   saving?: boolean
+  initialValues?: TradeFormSchema
+  submitLabel?: string
 }
 
 const STRATEGY_IDS: StrategyId[] = ['liquidity_sweep', 'liquidity_run']
@@ -33,17 +35,36 @@ function emptyRulesMet(): Record<string, boolean> {
   return Object.fromEntries(RULE_IDS.map((id) => [id, false]))
 }
 
-export function TradeForm({ image, onImageChange, onSubmit, saving = false }: TradeFormProps) {
+function buildFormDefaults(initialValues?: TradeFormSchema): TradeFormSchema {
+  if (initialValues) return initialValues
+  return {
+    ...defaultTradeFormValues,
+    rulesMet: emptyRulesMet(),
+    ruleLabels: {},
+  }
+}
+
+export function TradeForm({
+  image,
+  onImageChange,
+  onSubmit,
+  saving = false,
+  initialValues,
+  submitLabel = 'Save Trade',
+}: TradeFormProps) {
   const { getStrategyName, getRules, refresh } = useStrategyConfig()
   const [editorOpen, setEditorOpen] = useState(false)
-  const [rules, setRules] = useState(() => getRules(defaultTradeFormValues.strategy))
+  const resolvedDefaults = buildFormDefaults(initialValues)
+  const [rules, setRules] = useState(() => getRules(resolvedDefaults.strategy))
 
   const form = useForm<TradeFormSchema>({
     resolver: zodResolver(tradeFormSchema),
     defaultValues: {
-      ...defaultTradeFormValues,
-      rulesMet: emptyRulesMet(),
-      ruleLabels: rulesToLabelMap(getRules(defaultTradeFormValues.strategy)),
+      ...resolvedDefaults,
+      ruleLabels:
+        resolvedDefaults.ruleLabels && Object.keys(resolvedDefaults.ruleLabels).length > 0
+          ? resolvedDefaults.ruleLabels
+          : rulesToLabelMap(getRules(resolvedDefaults.strategy)),
     },
     mode: 'onChange',
   })
@@ -51,24 +72,24 @@ export function TradeForm({ image, onImageChange, onSubmit, saving = false }: Tr
   const { watch, setValue, handleSubmit } = form
   const values = watch()
 
-  const syncRulesForStrategy = (strategy: StrategyId) => {
+  const handleStrategyChange = (strategy: StrategyId) => {
+    if (strategy === values.strategy) return
     const savedRules = getRules(strategy)
     setRules(savedRules)
+    setValue('strategy', strategy)
     setValue('ruleLabels', rulesToLabelMap(savedRules))
     setValue('rulesMet', emptyRulesMet())
   }
-
-  useEffect(() => {
-    syncRulesForStrategy(values.strategy)
-  }, [values.strategy, getRules, setValue])
 
   const handleRuleChange = (id: string, checked: boolean) => {
     setValue('rulesMet', { ...values.rulesMet, [id]: checked })
   }
 
-  const handleEditorSaved = () => {
-    refresh()
-    syncRulesForStrategy(values.strategy)
+  const handleEditorSaved = async () => {
+    await refresh()
+    const savedRules = getRules(values.strategy)
+    setRules(savedRules)
+    setValue('ruleLabels', rulesToLabelMap(savedRules))
   }
 
   return (
@@ -95,7 +116,7 @@ export function TradeForm({ image, onImageChange, onSubmit, saving = false }: Tr
               <button
                 key={id}
                 type="button"
-                onClick={() => setValue('strategy', id)}
+                onClick={() => handleStrategyChange(id)}
                 className={cn(
                   'rounded-2xl border-2 px-6 py-5 text-left transition-all duration-200',
                   values.strategy === id
@@ -258,9 +279,9 @@ export function TradeForm({ image, onImageChange, onSubmit, saving = false }: Tr
           <ImageUpload image={image} onChange={onImageChange} />
         </div>
 
-      <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={saving}>
-        {saving ? 'Saving...' : 'Save Trade'}
-      </Button>
+        <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={saving}>
+          {saving ? 'Saving...' : submitLabel}
+        </Button>
       </form>
 
       <StrategyRulesEditor

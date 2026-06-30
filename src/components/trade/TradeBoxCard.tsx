@@ -1,6 +1,7 @@
 import { format, parseISO } from 'date-fns'
-import { Check, ImageIcon, X } from 'lucide-react'
+import { Check, ImageIcon, Pencil, Trash2, X } from 'lucide-react'
 import { DialogRoot } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { QualityStar } from '@/components/calendar/QualityStar'
 import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import { PLACEHOLDER_RULES } from '@/data/strategies'
@@ -88,9 +89,19 @@ interface TradeDetailModalProps {
   trade: TradeEntry | null
   open: boolean
   onClose: () => void
+  onEdit?: (trade: TradeEntry) => void
+  onDelete?: (trade: TradeEntry) => void
+  deleting?: boolean
 }
 
-export function TradeDetailModal({ trade, open, onClose }: TradeDetailModalProps) {
+export function TradeDetailModal({
+  trade,
+  open,
+  onClose,
+  onEdit,
+  onDelete,
+  deleting = false,
+}: TradeDetailModalProps) {
   const { getStrategyName } = useStrategyConfig()
   if (!trade) return null
 
@@ -192,6 +203,34 @@ export function TradeDetailModal({ trade, open, onClose }: TradeDetailModalProps
           </div>
         ))}
       </dl>
+
+      {(onEdit || onDelete) && (
+        <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
+          {onEdit && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(trade)}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit trade
+            </Button>
+          )}
+          {onDelete && (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={deleting}
+              onClick={() => onDelete(trade)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {deleting ? 'Deleting...' : 'Delete trade'}
+            </Button>
+          )}
+        </div>
+      )}
     </DialogRoot>
   )
 }

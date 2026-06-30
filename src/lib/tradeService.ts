@@ -63,6 +63,7 @@ function rowToTrade(row: DbTradeRow, imagePreviewUrl: string | null): TradeEntry
           id: row.id,
           name: 'screenshot',
           previewUrl: imagePreviewUrl,
+          storagePath: row.image_url ?? undefined,
         }
       : null,
     createdAt: row.created_at,
@@ -175,4 +176,56 @@ export async function removeTrade(tradeId: string): Promise<string | null> {
 
   const { error } = await supabase.from('trades').delete().eq('id', tradeId).eq('user_id', user.id)
   return error?.message ?? null
+}
+
+export async function updateTrade(
+  tradeId: string,
+  trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair' | 'image'>,
+  image: TradeImage | null,
+): Promise<{ trade: TradeEntry | null; error: string | null }> {
+  if (!supabase) return { trade: null, error: 'Supabase is not configured.' }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { trade: null, error: 'You must be signed in.' }
+
+  const updates: Record<string, unknown> = {
+    date: trade.date,
+    time: trade.time,
+    session: trade.session,
+    direction: trade.direction,
+    risk_percent: trade.riskPercent,
+    lot_size: trade.lotSize,
+    entry: trade.entry,
+    stop_loss: trade.stopLoss,
+    take_profit: trade.takeProfit,
+    result: trade.result,
+    strategy: trade.strategy,
+    rules_met: trade.rulesMet,
+    rule_labels: trade.ruleLabels ?? {},
+  }
+
+  if (image?.file) {
+    const uploaded = await uploadTradeImage(user.id, tradeId, image)
+    if (uploaded) updates.image_url = uploaded
+  } else if (image === null) {
+    updates.image_url = null
+  } else if (image?.storagePath) {
+    updates.image_url = image.storagePath
+  }
+
+  const { data, error } = await supabase
+    .from('trades')
+    .update(updates)
+    .eq('id', tradeId)
+    .eq('user_id', user.id)
+    .select('*')
+    .single()
+
+  if (error || !data) return { trade: null, error: error?.message ?? 'Failed to update trade.' }
+
+  const row = data as DbTradeRow
+  const previewUrl = row.image_url ? await resolveTradeImageUrl(row.image_url) : null
+  return { trade: rowToTrade(row, previewUrl), error: null }
 }

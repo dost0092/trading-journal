@@ -26,10 +26,8 @@ create policy "Superadmin can update all profiles"
   on public.profiles for update
   using (public.is_superadmin());
 
+-- Superadmins manage users only; they do not read other users' trades
 drop policy if exists "Superadmin read all trades" on public.trades;
-create policy "Superadmin read all trades"
-  on public.trades for select
-  using (public.is_superadmin());
 
 -- Create or repair profile for the signed-in user
 create or replace function public.ensure_user_profile()

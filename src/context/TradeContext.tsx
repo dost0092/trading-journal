@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { calcStats } from '@/lib/tradeStats'
-import { createTrade, fetchUserTrades, removeTrade } from '@/lib/tradeService'
+import { createTrade, fetchUserTrades, removeTrade, updateTrade as updateTradeInDb } from '@/lib/tradeService'
 import { filterByStrategy } from '@/lib/tradeUtils'
 import type { StrategyFilter, TradeEntry, TradeImage } from '@/types/trade'
 
@@ -26,6 +26,11 @@ interface TradeContextValue {
     image: TradeImage | null,
   ) => Promise<string | null>
   deleteTrade: (id: string) => Promise<string | null>
+  updateTrade: (
+    id: string,
+    trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair' | 'image'>,
+    image: TradeImage | null,
+  ) => Promise<string | null>
   refreshTrades: () => Promise<void>
   stats: ReturnType<typeof calcStats>
   filteredTrades: TradeEntry[]
@@ -80,6 +85,20 @@ export function TradeProvider({ children }: { children: ReactNode }) {
     return null
   }, [])
 
+  const updateTrade = useCallback(
+    async (
+      id: string,
+      trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair' | 'image'>,
+      image: TradeImage | null,
+    ) => {
+      const { trade: saved, error: saveError } = await updateTradeInDb(id, trade, image)
+      if (saveError) return saveError
+      if (saved) setTrades((prev) => prev.map((t) => (t.id === id ? saved : t)))
+      return null
+    },
+    [],
+  )
+
   const filteredByStrategy = useMemo(
     () => filterByStrategy(trades, strategyFilter),
     [trades, strategyFilter],
@@ -104,6 +123,7 @@ export function TradeProvider({ children }: { children: ReactNode }) {
       setStrategyFilter,
       addTrade,
       deleteTrade,
+      updateTrade,
       refreshTrades,
       stats,
       filteredTrades,
@@ -117,6 +137,7 @@ export function TradeProvider({ children }: { children: ReactNode }) {
       strategyFilter,
       addTrade,
       deleteTrade,
+      updateTrade,
       refreshTrades,
       stats,
       filteredTrades,
