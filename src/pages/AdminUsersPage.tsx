@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Check, RefreshCw, Shield, X } from 'lucide-react'
+import { Check, RefreshCw, Shield, ShieldPlus, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import type { UserProfile, UserStatus } from '@/lib/supabase'
 import { Badge } from '@/components/ui/badge'
@@ -22,7 +22,7 @@ function StatusBadge({ status, role }: { status: UserStatus; role: string }) {
 }
 
 export function AdminUsersPage() {
-  const { fetchAllUsers, updateUserStatus, profile: me, isSuperAdmin } = useAuth()
+  const { fetchAllUsers, updateUserStatus, updateUserRole, profile: me, isSuperAdmin } = useAuth()
   const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [actionId, setActionId] = useState<string | null>(null)
@@ -53,6 +53,22 @@ export function AdminUsersPage() {
     await load()
   }
 
+  async function makeAdmin(user: UserProfile) {
+    const label = user.full_name ?? user.email ?? 'this user'
+    if (!window.confirm(`Make ${label} an admin? They will be able to approve users and manage the app.`)) {
+      return
+    }
+    setActionId(user.id)
+    setError(null)
+    const err = await updateUserRole(user.id, 'superadmin')
+    setActionId(null)
+    if (err) {
+      setError(err)
+      return
+    }
+    await load()
+  }
+
   if (!isSuperAdmin) {
     return (
       <p className="py-8 text-center text-sm text-muted">
@@ -72,7 +88,7 @@ export function AdminUsersPage() {
             <h1 className="text-lg font-semibold tracking-tight">User management</h1>
           </div>
           <p className="mt-1 text-sm text-muted">
-            Approve or reject users who signed up. Superadmins always have full access.
+            Approve or reject signups, or promote approved users to admin. Admins have full access.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -162,6 +178,18 @@ export function AdminUsersPage() {
                           onClick={() => setStatus(user.id, 'approved')}
                         >
                           Approve
+                        </Button>
+                      )}
+
+                      {!isSuper && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={actionId === user.id}
+                          onClick={() => makeAdmin(user)}
+                        >
+                          <ShieldPlus className="mr-1 h-3.5 w-3.5" />
+                          Make admin
                         </Button>
                       )}
                     </div>

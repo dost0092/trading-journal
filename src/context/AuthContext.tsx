@@ -38,6 +38,7 @@ interface AuthContextValue {
   updateProfileName: (fullName: string) => Promise<string | null>
   fetchAllUsers: () => Promise<{ users: UserProfile[]; error: string | null }>
   updateUserStatus: (userId: string, status: UserStatus) => Promise<string | null>
+  updateUserRole: (userId: string, role: UserRole) => Promise<string | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -182,6 +183,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error?.message ?? null
   }, [])
 
+  const updateUserRole = useCallback(async (userId: string, role: UserRole) => {
+    if (!supabase) return 'Supabase is not configured.'
+    const updates: Partial<Pick<UserProfile, 'role' | 'status'>> = { role }
+    if (role === 'superadmin') updates.status = 'approved'
+    const { error } = await supabase.from('profiles').update(updates).eq('id', userId)
+    return error?.message ?? null
+  }, [])
+
   const userEmail = profile?.email ?? session?.user?.email ?? null
   const isSuperAdmin = resolveIsSuperAdmin(profile, userEmail)
   const isApproved = resolveIsApproved(profile, userEmail)
@@ -206,6 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateProfileName,
       fetchAllUsers,
       updateUserStatus,
+      updateUserRole,
     }),
     [
       session,
@@ -223,6 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateProfileName,
       fetchAllUsers,
       updateUserStatus,
+      updateUserRole,
     ],
   )
 
