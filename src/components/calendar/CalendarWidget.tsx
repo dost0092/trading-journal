@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils'
 import { useTrades } from '@/context/TradeContext'
 import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import { QualityStar } from '@/components/calendar/QualityStar'
-import { getRuleCount, getStarTier } from '@/lib/tradeUtils'
+import { getRuleCount, getRuleTotal, getStarTier } from '@/lib/tradeUtils'
 import { getTradeCountForDate, getTradesForDate } from '@/lib/tradeStats'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -138,10 +138,10 @@ export function CalendarGrid({
 
 function CalendarLegend({ className }: { className?: string }) {
   const items: { label: string; tier: 'gold' | 'silver' | 'gray' | 'dot' }[] = [
-    { label: '5 rules', tier: 'gold' },
-    { label: '4 rules', tier: 'silver' },
-    { label: '3 rules', tier: 'gray' },
-    { label: '<3 rules', tier: 'dot' },
+    { label: '100%', tier: 'gold' },
+    { label: '80%+', tier: 'silver' },
+    { label: '60%+', tier: 'gray' },
+    { label: '<60%', tier: 'dot' },
   ]
 
   return (
@@ -231,7 +231,7 @@ function SelectedDayTrades() {
                   </div>
                   <p className="text-[11px] text-muted">{trade.time}</p>
                 </div>
-                <QualityStar tier={getStarTier(getRuleCount(trade))} />
+                <QualityStar tier={getStarTier(getRuleCount(trade), getRuleTotal(trade))} />
               </div>
             ))}
         </div>

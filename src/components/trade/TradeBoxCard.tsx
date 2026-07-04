@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button'
 import { QualityStar } from '@/components/calendar/QualityStar'
 import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import { PLACEHOLDER_RULES } from '@/data/strategies'
-import { getRuleCount, getStarTier } from '@/lib/tradeUtils'
-import { RULE_IDS, type TradeEntry } from '@/types/trade'
+import { getRuleCount, getRuleIdsForTrade, getRuleTotal, getStarTier } from '@/lib/tradeUtils'
+import type { TradeEntry } from '@/types/trade'
 import { cn } from '@/lib/utils'
 
 function getRuleLabel(trade: TradeEntry, ruleId: string): string {
@@ -32,7 +32,8 @@ export function TradeBoxCard({ trade, onClick, active }: TradeBoxCardProps) {
   const resultLabel =
     trade.result === 'breakeven' ? 'Break Even' : trade.result
   const ruleCount = getRuleCount(trade)
-  const starTier = getStarTier(ruleCount)
+  const ruleTotal = getRuleTotal(trade)
+  const starTier = getStarTier(ruleCount, ruleTotal)
 
   return (
     <button
@@ -78,7 +79,7 @@ export function TradeBoxCard({ trade, onClick, active }: TradeBoxCardProps) {
         </p>
         <div className="mt-0.5 flex items-center gap-1">
           <QualityStar tier={starTier} className="h-3.5 w-3.5" />
-          <span className="text-[10px] text-muted">{ruleCount}/5 rules</span>
+          <span className="text-[10px] text-muted">{ruleCount}/{ruleTotal} rules</span>
         </div>
       </div>
     </button>
@@ -106,7 +107,9 @@ export function TradeDetailModal({
   if (!trade) return null
 
   const ruleCount = getRuleCount(trade)
-  const starTier = getStarTier(ruleCount)
+  const ruleTotal = getRuleTotal(trade)
+  const ruleIds = getRuleIdsForTrade(trade)
+  const starTier = getStarTier(ruleCount, ruleTotal)
   const resultLabel =
     trade.result === 'breakeven' ? 'Break Even' : trade.result
 
@@ -156,7 +159,7 @@ export function TradeDetailModal({
             <p className="text-[11px] text-muted">Rules</p>
             <div className="mt-0.5 flex items-center gap-1.5">
               <QualityStar tier={starTier} className="h-4 w-4" />
-              <p className="font-medium">{ruleCount}/5</p>
+              <p className="font-medium">{ruleCount}/{ruleTotal}</p>
             </div>
           </div>
         </div>
@@ -165,7 +168,7 @@ export function TradeDetailModal({
       <div className="mb-5 space-y-2 border-t border-border pt-4">
         <p className="text-[11px] font-medium uppercase tracking-wider text-muted">Rules checklist</p>
         <ul className="space-y-1.5">
-          {RULE_IDS.map((ruleId) => {
+          {ruleIds.map((ruleId) => {
             const met = trade.rulesMet.includes(ruleId)
             return (
               <li

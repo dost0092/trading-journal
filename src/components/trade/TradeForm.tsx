@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
@@ -11,12 +11,13 @@ import { StrategyRulesEditor } from '@/components/trade/StrategyRulesEditor'
 import { ImageUpload } from '@/components/trade/ImageUpload'
 import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import { rulesToLabelMap } from '@/lib/ruleStorage'
+import type { StrategySetup } from '@/lib/strategyConfigService'
 import {
   tradeFormSchema,
   defaultTradeFormValues,
   type TradeFormSchema,
 } from '@/lib/tradeSchema'
-import { GOLD_PAIR, RULE_IDS, type StrategyId } from '@/types/trade'
+import { GOLD_PAIR, type StrategyId } from '@/types/trade'
 import type { TradeImage } from '@/types/trade'
 import { cn } from '@/lib/utils'
 
@@ -31,15 +32,18 @@ interface TradeFormProps {
 
 const STRATEGY_IDS: StrategyId[] = ['liquidity_sweep', 'liquidity_run']
 
-function emptyRulesMet(): Record<string, boolean> {
-  return Object.fromEntries(RULE_IDS.map((id) => [id, false]))
+function buildRulesMet(
+  rules: { id: string }[],
+  previous: Record<string, boolean> = {},
+): Record<string, boolean> {
+  return Object.fromEntries(rules.map((rule) => [rule.id, previous[rule.id] ?? false]))
 }
 
 function buildFormDefaults(initialValues?: TradeFormSchema): TradeFormSchema {
   if (initialValues) return initialValues
   return {
     ...defaultTradeFormValues,
-    rulesMet: emptyRulesMet(),
+    rulesMet: {},
     ruleLabels: {},
   }
 }
@@ -54,13 +58,23 @@ export function TradeForm({
 }: TradeFormProps) {
   const { getStrategyName, getRules, refresh } = useStrategyConfig()
   const [editorOpen, setEditorOpen] = useState(false)
+  const [skipInitialRuleSync, setSkipInitialRuleSync] = useState(Boolean(initialValues))
   const resolvedDefaults = buildFormDefaults(initialValues)
-  const [rules, setRules] = useState(() => getRules(resolvedDefaults.strategy))
+  const initialRuleLabels = Object.entries(resolvedDefaults.ruleLabels)
+  const initialRules =
+    initialRuleLabels.length > 0
+      ? initialRuleLabels.map(([id, label]) => ({ id, label }))
+      : getRules(resolvedDefaults.strategy)
+  const [rules, setRules] = useState(() => initialRules)
 
   const form = useForm<TradeFormSchema>({
     resolver: zodResolver(tradeFormSchema),
     defaultValues: {
       ...resolvedDefaults,
+      rulesMet: {
+        ...buildRulesMet(initialRules),
+        ...resolvedDefaults.rulesMet,
+      },
       ruleLabels:
         resolvedDefaults.ruleLabels && Object.keys(resolvedDefaults.ruleLabels).length > 0
           ? resolvedDefaults.ruleLabels
@@ -78,18 +92,31 @@ export function TradeForm({
     setRules(savedRules)
     setValue('strategy', strategy)
     setValue('ruleLabels', rulesToLabelMap(savedRules))
-    setValue('rulesMet', emptyRulesMet())
+    setValue('rulesMet', buildRulesMet(savedRules))
   }
 
   const handleRuleChange = (id: string, checked: boolean) => {
     setValue('rulesMet', { ...values.rulesMet, [id]: checked })
   }
 
-  const handleEditorSaved = async () => {
-    await refresh()
+  useEffect(() => {
+    if (skipInitialRuleSync) {
+      setSkipInitialRuleSync(false)
+      return
+    }
+
     const savedRules = getRules(values.strategy)
     setRules(savedRules)
     setValue('ruleLabels', rulesToLabelMap(savedRules))
+    setValue('rulesMet', buildRulesMet(savedRules, values.rulesMet))
+  }, [getRules, setValue, skipInitialRuleSync, values.strategy])
+
+  const handleEditorSaved = async (setup: StrategySetup) => {
+    await refresh()
+    const savedRules = setup.rulesByStrategy[values.strategy]
+    setRules(savedRules)
+    setValue('ruleLabels', rulesToLabelMap(savedRules))
+    setValue('rulesMet', buildRulesMet(savedRules, values.rulesMet))
   }
 
   return (

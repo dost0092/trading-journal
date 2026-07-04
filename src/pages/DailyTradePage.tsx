@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { format, parseISO } from 'date-fns'
 import { CalendarWidget } from '@/components/calendar/CalendarWidget'
 import { TradeBoxCard, TradeDetailModal } from '@/components/trade/TradeBoxCard'
 import { TradeEditDialog } from '@/components/trade/TradeEditDialog'
@@ -20,6 +21,20 @@ export function DailyTradePage() {
       return true
     })
   }, [filteredTrades, resultFilter])
+
+  const groupedTrades = useMemo(() => {
+    const groups = new Map<string, TradeEntry[]>()
+
+    trades.forEach((trade) => {
+      const dateTrades = groups.get(trade.date) ?? []
+      dateTrades.push(trade)
+      groups.set(trade.date, dateTrades)
+    })
+
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, dateTrades]) => ({ date, trades: dateTrades }))
+  }, [trades])
 
   async function handleDelete(trade: TradeEntry) {
     if (!window.confirm('Delete this trade? This cannot be undone.')) return
@@ -57,19 +72,31 @@ export function DailyTradePage() {
       )}
 
       <div className="grid gap-5 md:grid-cols-[1fr_240px]">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-5">
           {trades.length === 0 ? (
-            <div className="col-span-full rounded-xl border border-dashed border-border py-16 text-center text-xs text-muted">
+            <div className="rounded-xl border border-dashed border-border py-16 text-center text-xs text-muted">
               No trades found.
             </div>
           ) : (
-            trades.map((trade) => (
-              <TradeBoxCard
-                key={trade.id}
-                trade={trade}
-                active={selected?.id === trade.id}
-                onClick={() => setSelected(trade)}
-              />
+            groupedTrades.map((group) => (
+              <section key={group.date} className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <p className="shrink-0 text-xs font-medium uppercase tracking-wider text-muted">
+                    {format(parseISO(group.date), 'MMM d, yyyy')}
+                  </p>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {group.trades.map((trade) => (
+                    <TradeBoxCard
+                      key={trade.id}
+                      trade={trade}
+                      active={selected?.id === trade.id}
+                      onClick={() => setSelected(trade)}
+                    />
+                  ))}
+                </div>
+              </section>
             ))
           )}
         </div>

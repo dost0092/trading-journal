@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react'
-import { PencilLine } from 'lucide-react'
+import { PencilLine, Plus, Trash2 } from 'lucide-react'
 import { DialogRoot } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/input'
 import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import type { TradeRule } from '@/lib/ruleStorage'
+import type { StrategySetup } from '@/lib/strategyConfigService'
 import type { StrategyId } from '@/types/trade'
-import { RULE_IDS } from '@/types/trade'
 
 const STRATEGY_IDS: StrategyId[] = ['liquidity_sweep', 'liquidity_run']
 
 interface StrategyRulesEditorProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSaved?: () => void
+  onSaved?: (setup: StrategySetup) => void
 }
 
 export function StrategyRulesEditor({
@@ -48,6 +48,23 @@ export function StrategyRulesEditor({
     }))
   }
 
+  function addRule(strategy: StrategyId) {
+    setRulesByStrategy((prev) => ({
+      ...prev,
+      [strategy]: [
+        ...prev[strategy],
+        { id: `rule_${crypto.randomUUID()}`, label: '' },
+      ],
+    }))
+  }
+
+  function deleteRule(strategy: StrategyId, ruleId: string) {
+    setRulesByStrategy((prev) => ({
+      ...prev,
+      [strategy]: prev[strategy].filter((r) => r.id !== ruleId),
+    }))
+  }
+
   async function handleSave() {
     const trimmedNames = {
       liquidity_sweep: names.liquidity_sweep.trim(),
@@ -72,13 +89,14 @@ export function StrategyRulesEditor({
 
     setSaving(true)
     setError(null)
-    const err = await saveSetup({ names: trimmedNames, rulesByStrategy: cleanedRules })
+    const setup = { names: trimmedNames, rulesByStrategy: cleanedRules }
+    const err = await saveSetup(setup)
     setSaving(false)
     if (err) {
       setError(err)
       return
     }
-    onSaved?.()
+    onSaved?.(setup)
     onOpenChange(false)
   }
 
@@ -109,20 +127,37 @@ export function StrategyRulesEditor({
 
             <div className="space-y-2">
               <p className="text-xs font-medium uppercase tracking-wider text-muted">Rules</p>
-              {RULE_IDS.map((ruleId, index) => {
-                const rule = rulesByStrategy[strategyId].find((r) => r.id === ruleId)
+              {rulesByStrategy[strategyId].map((rule, index) => {
                 return (
-                  <div key={ruleId} className="flex items-center gap-2">
+                  <div key={rule.id} className="flex items-center gap-2">
                     <span className="w-14 shrink-0 text-xs text-muted">Rule {index + 1}</span>
                     <Input
-                      value={rule?.label ?? ''}
-                      onChange={(e) => updateRule(strategyId, ruleId, e.target.value)}
+                      value={rule.label}
+                      onChange={(e) => updateRule(strategyId, rule.id, e.target.value)}
                       placeholder={`Write rule ${index + 1}...`}
                       className="flex-1"
                     />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteRule(strategyId, rule.id)}
+                      aria-label={`Delete rule ${index + 1}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-muted" />
+                    </Button>
                   </div>
                 )
               })}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => addRule(strategyId)}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Rule
+              </Button>
             </div>
           </div>
         ))}

@@ -4,6 +4,7 @@ import {
   format,
   startOfWeek,
 } from 'date-fns'
+import { PLACEHOLDER_RULES } from '@/data/strategies'
 import type { TradeEntry } from '@/types/trade'
 
 export type StarTier = 'gold' | 'silver' | 'gray' | 'dot'
@@ -14,10 +15,30 @@ export function getRuleCount(trade: TradeEntry): number {
   return trade.rulesMet.length
 }
 
-export function getStarTier(ruleCount: number): StarTier {
-  if (ruleCount >= 5) return 'gold'
-  if (ruleCount === 4) return 'silver'
-  if (ruleCount === 3) return 'gray'
+export function getRuleIdsForTrade(trade: TradeEntry): string[] {
+  const ids = new Set<string>()
+
+  Object.keys(trade.ruleLabels ?? {}).forEach((id) => ids.add(id))
+  trade.rulesMet.forEach((id) => ids.add(id))
+
+  if (ids.size === 0) {
+    PLACEHOLDER_RULES.forEach((rule) => ids.add(rule.id))
+  }
+
+  return Array.from(ids)
+}
+
+export function getRuleTotal(trade: TradeEntry): number {
+  return getRuleIdsForTrade(trade).length
+}
+
+export function getStarTier(ruleCount: number, totalRules: number): StarTier {
+  if (totalRules <= 0 || ruleCount <= 0) return 'dot'
+
+  const completion = ruleCount / totalRules
+  if (completion >= 1) return 'gold'
+  if (completion >= 0.8) return 'silver'
+  if (completion >= 0.6) return 'gray'
   return 'dot'
 }
 

@@ -1,6 +1,5 @@
 import { PLACEHOLDER_RULES } from '@/data/strategies'
 import type { StrategyId } from '@/types/trade'
-import { RULE_IDS } from '@/types/trade'
 
 export interface TradeRule {
   id: string
@@ -21,13 +20,10 @@ export function getSavedRules(strategy: StrategyId): TradeRule[] {
     const parsed = JSON.parse(raw) as TradeRule[]
     if (!Array.isArray(parsed)) return getDefaultRules()
 
-    return RULE_IDS.map((id, index) => {
-      const saved = parsed.find((r) => r.id === id)
-      return {
-        id,
-        label: saved?.label?.trim() || PLACEHOLDER_RULES[index].label,
-      }
-    })
+    return parsed.map((rule, index) => ({
+      id: rule.id || `rule_${index + 1}`,
+      label: rule.label?.trim() || `Rule ${index + 1}`,
+    }))
   } catch {
     return getDefaultRules()
   }

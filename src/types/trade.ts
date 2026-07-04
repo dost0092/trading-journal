@@ -36,5 +36,3 @@ export interface TradeEntry {
 }
 
 export const GOLD_PAIR = 'XAU/USD'
-
-export const RULE_IDS = ['rule1', 'rule2', 'rule3', 'rule4', 'rule5'] as const

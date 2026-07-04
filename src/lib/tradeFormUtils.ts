@@ -1,9 +1,10 @@
 import type { TradeFormSchema } from '@/lib/tradeSchema'
-import { RULE_IDS, type TradeEntry } from '@/types/trade'
+import { getRuleIdsForTrade } from '@/lib/tradeUtils'
+import type { TradeEntry } from '@/types/trade'
 
 export function tradeToFormValues(trade: TradeEntry): TradeFormSchema {
   const rulesMet = Object.fromEntries(
-    RULE_IDS.map((id) => [id, trade.rulesMet.includes(id)]),
+    getRuleIdsForTrade(trade).map((id) => [id, trade.rulesMet.includes(id)]),
   )
 
   return {

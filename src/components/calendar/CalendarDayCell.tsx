@@ -1,7 +1,7 @@
 import { isSameMonth, isToday } from 'date-fns'
 import { QualityStars } from '@/components/calendar/QualityStar'
 import { getTradesForDate } from '@/lib/tradeStats'
-import { getRuleCount, getStarTier } from '@/lib/tradeUtils'
+import { getRuleCount, getRuleTotal, getStarTier } from '@/lib/tradeUtils'
 import type { TradeEntry } from '@/types/trade'
 import { cn } from '@/lib/utils'
 
@@ -24,7 +24,7 @@ export function CalendarDayCell({
   onSelect,
 }: CalendarDayCellProps) {
   const dayTrades = getTradesForDate(trades, dateStr)
-  const starTiers = dayTrades.map((t) => getStarTier(getRuleCount(t)))
+  const starTiers = dayTrades.map((t) => getStarTier(getRuleCount(t), getRuleTotal(t)))
   const isSelected = selectedDate === dateStr
   const isTodayDate = isToday(day)
   const inMonth = isSameMonth(day, month)

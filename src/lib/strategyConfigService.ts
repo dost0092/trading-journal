@@ -18,6 +18,15 @@ export function getDefaultSetup(): StrategySetup {
   }
 }
 
+function normalizeRules(rules: TradeRule[] | undefined, fallback: TradeRule[]) {
+  if (!Array.isArray(rules) || rules.length === 0) return fallback
+
+  return rules.map((rule, index) => ({
+    id: rule.id || `rule_${index + 1}`,
+    label: rule.label?.trim() || `Rule ${index + 1}`,
+  }))
+}
+
 export async function fetchUserStrategyConfig(): Promise<StrategySetup> {
   const defaults = getDefaultSetup()
   if (!supabase) return defaults
@@ -44,12 +53,14 @@ export async function fetchUserStrategyConfig(): Promise<StrategySetup> {
       liquidity_run: names?.liquidity_run?.trim() || defaults.names.liquidity_run,
     },
     rulesByStrategy: {
-      liquidity_sweep: rules?.liquidity_sweep?.length
-        ? rules.liquidity_sweep
-        : defaults.rulesByStrategy.liquidity_sweep,
-      liquidity_run: rules?.liquidity_run?.length
-        ? rules.liquidity_run
-        : defaults.rulesByStrategy.liquidity_run,
+      liquidity_sweep: normalizeRules(
+        rules?.liquidity_sweep,
+        defaults.rulesByStrategy.liquidity_sweep,
+      ),
+      liquidity_run: normalizeRules(
+        rules?.liquidity_run,
+        defaults.rulesByStrategy.liquidity_run,
+      ),
     },
   }
 }
