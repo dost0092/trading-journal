@@ -1,8 +1,6 @@
+import { STRATEGY_IDS } from '@/data/strategies'
 import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import { Card, CardContent } from '@/components/ui/card'
-import type { StrategyId } from '@/types/trade'
-
-const STRATEGY_IDS: StrategyId[] = ['liquidity_sweep', 'liquidity_run']
 
 export function FullStrategyPage() {
   const { getStrategyName, getRules } = useStrategyConfig()

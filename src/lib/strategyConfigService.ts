@@ -1,4 +1,4 @@
-import { PLACEHOLDER_RULES, STRATEGY_LABELS } from '@/data/strategies'
+import { PLACEHOLDER_RULES, STRATEGY_IDS, STRATEGY_LABELS } from '@/data/strategies'
 import type { TradeRule } from '@/lib/ruleStorage'
 import { supabase } from '@/lib/supabase'
 import type { StrategyId } from '@/types/trade'
@@ -11,10 +11,9 @@ export interface StrategySetup {
 export function getDefaultSetup(): StrategySetup {
   return {
     names: { ...STRATEGY_LABELS },
-    rulesByStrategy: {
-      liquidity_sweep: PLACEHOLDER_RULES.map((r) => ({ ...r })),
-      liquidity_run: PLACEHOLDER_RULES.map((r) => ({ ...r })),
-    },
+    rulesByStrategy: Object.fromEntries(
+      STRATEGY_IDS.map((id) => [id, PLACEHOLDER_RULES.map((r) => ({ ...r }))]),
+    ) as Record<StrategyId, TradeRule[]>,
   }
 }
 
@@ -44,24 +43,19 @@ export async function fetchUserStrategyConfig(): Promise<StrategySetup> {
 
   if (error || !data) return defaults
 
-  const names = data.strategy_names as Record<StrategyId, string>
-  const rules = data.rules_by_strategy as Record<StrategyId, TradeRule[]>
+  const names = data.strategy_names as Partial<Record<StrategyId, string>>
+  const rules = data.rules_by_strategy as Partial<Record<StrategyId, TradeRule[]>>
 
   return {
-    names: {
-      liquidity_sweep: names?.liquidity_sweep?.trim() || defaults.names.liquidity_sweep,
-      liquidity_run: names?.liquidity_run?.trim() || defaults.names.liquidity_run,
-    },
-    rulesByStrategy: {
-      liquidity_sweep: normalizeRules(
-        rules?.liquidity_sweep,
-        defaults.rulesByStrategy.liquidity_sweep,
-      ),
-      liquidity_run: normalizeRules(
-        rules?.liquidity_run,
-        defaults.rulesByStrategy.liquidity_run,
-      ),
-    },
+    names: Object.fromEntries(
+      STRATEGY_IDS.map((id) => [id, names?.[id]?.trim() || defaults.names[id]]),
+    ) as Record<StrategyId, string>,
+    rulesByStrategy: Object.fromEntries(
+      STRATEGY_IDS.map((id) => [
+        id,
+        normalizeRules(rules?.[id], defaults.rulesByStrategy[id]),
+      ]),
+    ) as Record<StrategyId, TradeRule[]>,
   }
 }
 

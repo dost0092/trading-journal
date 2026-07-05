@@ -1,6 +1,10 @@
 export type TradeDirection = 'buy' | 'sell'
 export type TradeResult = 'win' | 'loss' | 'breakeven'
-export type StrategyId = 'liquidity_sweep' | 'liquidity_run'
+export type StrategyId =
+  | 'liquidity_sweep'
+  | 'liquidity_run'
+  | 'fair_value_gap'
+  | 'order_block'
 export type SessionType = 'london' | 'new_york' | 'asia' | 'overlap'
 export type StrategyFilter = 'all' | StrategyId
 

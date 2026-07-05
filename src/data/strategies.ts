@@ -1,14 +1,23 @@
 import type { StrategyId } from '@/types/trade'
 
+export const STRATEGY_IDS: StrategyId[] = [
+  'liquidity_sweep',
+  'liquidity_run',
+  'fair_value_gap',
+  'order_block',
+]
+
 export const STRATEGY_LABELS: Record<StrategyId, string> = {
   liquidity_sweep: 'SCC Liquidity Sweep',
   liquidity_run: 'SCC Liquidity Run',
+  fair_value_gap: 'SCC Fair Value Gap',
+  order_block: 'SCC Order Block',
 }
 
-export const STRATEGIES = [
-  { id: 'liquidity_sweep' as const, name: STRATEGY_LABELS.liquidity_sweep },
-  { id: 'liquidity_run' as const, name: STRATEGY_LABELS.liquidity_run },
-]
+export const STRATEGIES = STRATEGY_IDS.map((id) => ({
+  id,
+  name: STRATEGY_LABELS[id],
+}))
 
 export const getStrategy = (id: string) =>
   STRATEGIES.find((s) => s.id === id)

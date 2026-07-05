@@ -6,9 +6,8 @@ import { Input, Label } from '@/components/ui/input'
 import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import type { TradeRule } from '@/lib/ruleStorage'
 import type { StrategySetup } from '@/lib/strategyConfigService'
+import { STRATEGY_IDS } from '@/data/strategies'
 import type { StrategyId } from '@/types/trade'
-
-const STRATEGY_IDS: StrategyId[] = ['liquidity_sweep', 'liquidity_run']
 
 interface StrategyRulesEditorProps {
   open: boolean
@@ -66,13 +65,12 @@ export function StrategyRulesEditor({
   }
 
   async function handleSave() {
-    const trimmedNames = {
-      liquidity_sweep: names.liquidity_sweep.trim(),
-      liquidity_run: names.liquidity_run.trim(),
-    }
+    const trimmedNames = Object.fromEntries(
+      STRATEGY_IDS.map((id) => [id, names[id].trim()]),
+    ) as Record<StrategyId, string>
 
-    if (!trimmedNames.liquidity_sweep || !trimmedNames.liquidity_run) {
-      setError('Both strategy names are required.')
+    if (STRATEGY_IDS.some((id) => !trimmedNames[id])) {
+      setError('All strategy names are required.')
       return
     }
 

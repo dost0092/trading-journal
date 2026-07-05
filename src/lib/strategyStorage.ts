@@ -1,4 +1,4 @@
-import { STRATEGY_LABELS } from '@/data/strategies'
+import { STRATEGY_IDS, STRATEGY_LABELS } from '@/data/strategies'
 import type { StrategyId } from '@/types/trade'
 
 const STORAGE_KEY = 'trading-journal-strategy-names'
@@ -13,12 +13,9 @@ export function getSavedStrategyNames(): Record<StrategyId, string> {
     if (!raw) return getDefaultStrategyNames()
 
     const parsed = JSON.parse(raw) as Partial<Record<StrategyId, string>>
-    return {
-      liquidity_sweep:
-        parsed.liquidity_sweep?.trim() || STRATEGY_LABELS.liquidity_sweep,
-      liquidity_run:
-        parsed.liquidity_run?.trim() || STRATEGY_LABELS.liquidity_run,
-    }
+    return Object.fromEntries(
+      STRATEGY_IDS.map((id) => [id, parsed[id]?.trim() || STRATEGY_LABELS[id]]),
+    ) as Record<StrategyId, string>
   } catch {
     return getDefaultStrategyNames()
   }

@@ -1,8 +1,10 @@
 import { format, parseISO } from 'date-fns'
+import { useEffect, useState } from 'react'
 import { Check, ImageIcon, Pencil, Trash2, X } from 'lucide-react'
 import { DialogRoot } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { QualityStar } from '@/components/calendar/QualityStar'
+import { ImageLightbox } from '@/components/trade/ImageLightbox'
 import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import { PLACEHOLDER_RULES } from '@/data/strategies'
 import { getRuleCount, getRuleIdsForTrade, getRuleTotal, getStarTier } from '@/lib/tradeUtils'
@@ -104,6 +106,12 @@ export function TradeDetailModal({
   deleting = false,
 }: TradeDetailModalProps) {
   const { getStrategyName } = useStrategyConfig()
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+
+  useEffect(() => {
+    if (!open) setLightboxOpen(false)
+  }, [open])
+
   if (!trade) return null
 
   const ruleCount = getRuleCount(trade)
@@ -114,6 +122,7 @@ export function TradeDetailModal({
     trade.result === 'breakeven' ? 'Break Even' : trade.result
 
   return (
+    <>
     <DialogRoot
       open={open}
       onOpenChange={(v) => !v && onClose()}
@@ -128,7 +137,9 @@ export function TradeDetailModal({
             <img
               src={trade.image.previewUrl}
               alt="Setup"
-              className="h-full w-full object-cover"
+              className="h-full w-full cursor-zoom-in object-cover"
+              onDoubleClick={() => setLightboxOpen(true)}
+              title="Double-click to enlarge"
             />
           ) : (
             <div className="flex h-full items-center justify-center">
@@ -235,5 +246,14 @@ export function TradeDetailModal({
         </div>
       )}
     </DialogRoot>
+    {trade.image && (
+      <ImageLightbox
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+        src={trade.image.previewUrl}
+        alt="Trade setup"
+      />
+    )}
+  </>
   )
 }

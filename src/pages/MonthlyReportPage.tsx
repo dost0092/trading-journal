@@ -2,10 +2,12 @@ import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recha
 import { CalendarWidget } from '@/components/calendar/CalendarWidget'
 import { StrategyFilterToggle } from '@/components/shared/StrategyFilterToggle'
 import { ChartCard } from '@/components/dashboard/ChartCard'
+import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import { useTrades } from '@/context/TradeContext'
 
 export function MonthlyReportPage() {
   const { stats, strategyFilter, setStrategyFilter } = useTrades()
+  const { getStrategyName } = useStrategyConfig()
 
   const pieData = [
     { name: 'Win', value: stats.wins, color: '#22C55E' },
@@ -13,11 +15,7 @@ export function MonthlyReportPage() {
   ].filter((d) => d.value > 0)
 
   const filterLabel =
-    strategyFilter === 'all'
-      ? 'All strategies'
-      : strategyFilter === 'liquidity_sweep'
-        ? 'SCC Liquidity Sweep'
-        : 'SCC Liquidity Run'
+    strategyFilter === 'all' ? 'All strategies' : getStrategyName(strategyFilter)
 
   return (
     <div className="mx-auto max-w-4xl space-y-12 py-4">

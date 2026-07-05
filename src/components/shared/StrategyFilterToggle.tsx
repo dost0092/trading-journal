@@ -1,4 +1,5 @@
-import type { StrategyFilter, StrategyId } from '@/types/trade'
+import type { StrategyFilter } from '@/types/trade'
+import { STRATEGY_IDS } from '@/data/strategies'
 import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import { cn } from '@/lib/utils'
 
@@ -7,8 +8,6 @@ interface StrategyFilterToggleProps {
   onChange: (v: StrategyFilter) => void
   className?: string
 }
-
-const STRATEGY_IDS: StrategyId[] = ['liquidity_sweep', 'liquidity_run']
 
 export function StrategyFilterToggle({
   value,

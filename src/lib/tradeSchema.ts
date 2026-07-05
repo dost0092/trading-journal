@@ -12,7 +12,7 @@ export const tradeFormSchema = z.object({
   stopLoss: z.number(),
   takeProfit: z.number(),
   result: z.enum(['win', 'loss', 'breakeven']),
-  strategy: z.enum(['liquidity_sweep', 'liquidity_run']),
+  strategy: z.enum(['liquidity_sweep', 'liquidity_run', 'fair_value_gap', 'order_block']),
   rulesMet: z.record(z.string(), z.boolean()),
   ruleLabels: z.record(z.string(), z.string()),
 })

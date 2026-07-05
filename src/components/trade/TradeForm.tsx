@@ -17,9 +17,10 @@ import {
   defaultTradeFormValues,
   type TradeFormSchema,
 } from '@/lib/tradeSchema'
-import { GOLD_PAIR, type StrategyId } from '@/types/trade'
+import { GOLD_PAIR } from '@/types/trade'
 import type { TradeImage } from '@/types/trade'
 import { cn } from '@/lib/utils'
+import { STRATEGY_IDS } from '@/data/strategies'
 
 interface TradeFormProps {
   image: TradeImage | null
@@ -29,8 +30,6 @@ interface TradeFormProps {
   initialValues?: TradeFormSchema
   submitLabel?: string
 }
-
-const STRATEGY_IDS: StrategyId[] = ['liquidity_sweep', 'liquidity_run']
 
 function buildRulesMet(
   rules: { id: string }[],
@@ -86,7 +85,7 @@ export function TradeForm({
   const { watch, setValue, handleSubmit } = form
   const values = watch()
 
-  const handleStrategyChange = (strategy: StrategyId) => {
+  const handleStrategyChange = (strategy: (typeof STRATEGY_IDS)[number]) => {
     if (strategy === values.strategy) return
     const savedRules = getRules(strategy)
     setRules(savedRules)
