@@ -22,6 +22,7 @@ import { SignupPage } from '@/pages/SignupPage'
 import { PendingApprovalPage } from '@/pages/PendingApprovalPage'
 import { AccessDeniedPage } from '@/pages/AccessDeniedPage'
 import { AdminUsersPage } from '@/pages/AdminUsersPage'
+import { AdminUserTradesPage } from '@/pages/AdminUserTradesPage'
 
 export default function App() {
   return (
@@ -50,6 +51,7 @@ export default function App() {
                 <Route path="settings" element={<SettingsPage />} />
                 <Route element={<SuperAdminGate />}>
                   <Route path="admin/users" element={<AdminUsersPage />} />
+                  <Route path="admin/users/:userId/trades" element={<AdminUserTradesPage />} />
                 </Route>
               </Route>
             </Route>

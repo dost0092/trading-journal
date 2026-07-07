@@ -203,7 +203,12 @@ create policy "Approved users manage own trades"
   using (auth.uid() = user_id and public.is_approved())
   with check (auth.uid() = user_id and public.is_approved());
 
--- Superadmins see only their own trades (same as regular users). No cross-user journal access.
+-- Superadmins see only their own trades on journal pages (app filters by user_id).
+-- Superadmins can read any user's trades via Manage Users → View trades (SELECT only).
+create policy "Superadmin read all trades"
+  on public.trades for select
+  to authenticated
+  using (public.is_superadmin());
 
 create table if not exists public.user_strategy_configs (
   user_id uuid primary key references auth.users (id) on delete cascade,
@@ -237,6 +242,14 @@ create policy "Users read own trade images"
   using (
     bucket_id = 'trade-images'
     and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+create policy "Superadmin read all trade images"
+  on storage.objects for select
+  to authenticated
+  using (
+    bucket_id = 'trade-images'
+    and public.is_superadmin()
   );
 
 create policy "Users delete own trade images"

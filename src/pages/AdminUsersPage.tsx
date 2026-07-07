@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Check, RefreshCw, Shield, ShieldPlus, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { BookOpen, Check, RefreshCw, Shield, ShieldPlus, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import type { UserProfile, UserStatus } from '@/lib/supabase'
 import { Badge } from '@/components/ui/badge'
@@ -88,7 +89,7 @@ export function AdminUsersPage() {
             <h1 className="text-lg font-semibold tracking-tight">User management</h1>
           </div>
           <p className="mt-1 text-sm text-muted">
-            Approve or reject signups, or promote approved users to admin. Admins have full access.
+            Approve or reject signups, promote admins, or view a user&apos;s journal (read-only).
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -137,6 +138,15 @@ export function AdminUsersPage() {
 
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge status={user.status} role={user.role} />
+
+                      {user.status === 'approved' && (
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to={`/admin/users/${user.id}/trades`}>
+                            <BookOpen className="mr-1 h-3.5 w-3.5" />
+                            View trades
+                          </Link>
+                        </Button>
+                      )}
 
                       {!isSuper && user.status === 'pending' && (
                         <>
