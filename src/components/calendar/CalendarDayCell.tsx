@@ -1,6 +1,6 @@
+import { memo } from 'react'
 import { isSameMonth, isToday } from 'date-fns'
 import { QualityStars } from '@/components/calendar/QualityStar'
-import { getTradesForDate } from '@/lib/tradeStats'
 import { getRuleCount, getRuleTotal, getStarTier } from '@/lib/tradeUtils'
 import type { TradeEntry } from '@/types/trade'
 import { cn } from '@/lib/utils'
@@ -8,22 +8,21 @@ import { cn } from '@/lib/utils'
 interface CalendarDayCellProps {
   day: Date
   dateStr: string
-  trades: TradeEntry[]
+  dayTrades: TradeEntry[]
   month: Date
   selectedDate: string | null
   onSelect: (dateStr: string) => void
   size?: 'compact' | 'full'
 }
 
-export function CalendarDayCell({
+export const CalendarDayCell = memo(function CalendarDayCell({
   day,
   dateStr,
-  trades,
+  dayTrades,
   month,
   selectedDate,
   onSelect,
 }: CalendarDayCellProps) {
-  const dayTrades = getTradesForDate(trades, dateStr)
   const starTiers = dayTrades.map((t) => getStarTier(getRuleCount(t), getRuleTotal(t)))
   const isSelected = selectedDate === dateStr
   const isTodayDate = isToday(day)
@@ -67,4 +66,4 @@ export function CalendarDayCell({
       )}
     </button>
   )
-}
+})

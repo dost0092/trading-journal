@@ -33,6 +33,7 @@ export function ImageLightbox({
           <img
             src={src}
             alt={alt}
+            decoding="async"
             className="max-h-[90vh] max-w-[90vw] object-contain"
             onClick={(e) => e.stopPropagation()}
           />

@@ -27,7 +27,7 @@ import { useTrades } from '@/context/TradeContext'
 import { useStrategyConfig } from '@/context/StrategyConfigContext'
 import { QualityStar } from '@/components/calendar/QualityStar'
 import { getRuleCount, getRuleTotal, getStarTier } from '@/lib/tradeUtils'
-import { getTradeCountForDate, getTradesForDate } from '@/lib/tradeStats'
+import { getTradeCountForDateFromIndex, getTradesForDateFromIndex } from '@/lib/tradeStats'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const WEEKDAYS_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
@@ -47,7 +47,7 @@ export function CalendarGrid({
   weekdayLabels,
   showTodayButton,
 }: CalendarGridProps) {
-  const { trades, selectedDate, setSelectedDate } = useTrades()
+  const { tradesByDate, selectedDate, setSelectedDate } = useTrades()
 
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(month))
@@ -123,7 +123,7 @@ export function CalendarGrid({
               key={dateStr}
               day={day}
               dateStr={dateStr}
-              trades={trades}
+              dayTrades={getTradesForDateFromIndex(tradesByDate, dateStr)}
               month={month}
               selectedDate={selectedDate}
               onSelect={handleSelect}
@@ -162,7 +162,7 @@ function CalendarLegend({ className }: { className?: string }) {
 }
 
 function SelectedDayTrades() {
-  const { trades, selectedDate } = useTrades()
+  const { tradesByDate, selectedDate } = useTrades()
   const { getStrategyName } = useStrategyConfig()
 
   if (!selectedDate) {
@@ -174,7 +174,7 @@ function SelectedDayTrades() {
     )
   }
 
-  const dayTrades = getTradesForDate(trades, selectedDate)
+  const dayTrades = getTradesForDateFromIndex(tradesByDate, selectedDate)
 
   return (
     <div className="space-y-3">
@@ -301,9 +301,9 @@ export function CalendarExpandedDialog({
 export function CalendarHeaderButton() {
   const [month, setMonth] = useState(new Date())
   const [open, setOpen] = useState(false)
-  const { trades, selectedDate } = useTrades()
+  const { tradesByDate, selectedDate } = useTrades()
   const today = format(new Date(), 'yyyy-MM-dd')
-  const todayCount = getTradeCountForDate(trades, today)
+  const todayCount = getTradeCountForDateFromIndex(tradesByDate, today)
 
   return (
     <>

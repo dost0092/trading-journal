@@ -14,7 +14,7 @@ import { motion } from 'framer-motion'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
-import { useTrades } from '@/context/TradeContext'
+import { useTradeStats } from '@/context/TradeContext'
 import { useAuth } from '@/context/AuthContext'
 import { resolveDisplayName, resolveInitials } from '@/lib/authUtils'
 
@@ -31,7 +31,7 @@ const NAV = [
 const ADMIN_NAV = [{ to: '/admin/users', label: 'Manage Users', icon: Shield }]
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { stats } = useTrades()
+  const { winRate } = useTradeStats()
   const { session, profile, user, isSuperAdmin, signOut } = useAuth()
 
   const email = profile?.email ?? user?.email ?? session?.user?.email
@@ -127,7 +127,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               <p className="truncate text-sm font-medium">{displayName}</p>
               <p className="truncate text-[11px] text-muted">
                 {isSuperAdmin ? 'Superadmin · ' : ''}
-                XAU/USD · {stats.winRate}% win
+                XAU/USD · {winRate}% win
               </p>
             </div>
           </div>

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -30,22 +31,40 @@ interface StrategyConfigContextValue {
 const StrategyConfigContext = createContext<StrategyConfigContextValue | null>(null)
 
 export function StrategyConfigProvider({ children }: { children: ReactNode }) {
-  const { session, isApproved } = useAuth()
+  const { session, isApproved, user } = useAuth()
+  const userId = user?.id ?? session?.user?.id ?? null
   const [setup, setSetup] = useState<StrategySetup>(getDefaultSetup)
   const [loading, setLoading] = useState(true)
+  const hasLoadedRef = useRef(false)
+  const fetchPromiseRef = useRef<Promise<void> | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!session || !isApproved) {
-      setSetup(getDefaultSetup())
-      setLoading(false)
+    if (fetchPromiseRef.current) {
+      await fetchPromiseRef.current
       return
     }
 
-    setLoading(true)
-    const config = await fetchUserStrategyConfig()
-    setSetup(config)
-    setLoading(false)
-  }, [session, isApproved])
+    const run = async () => {
+      if (!session || !isApproved || !userId) {
+        setSetup(getDefaultSetup())
+        setLoading(false)
+        hasLoadedRef.current = false
+        return
+      }
+
+      if (!hasLoadedRef.current) setLoading(true)
+      const config = await fetchUserStrategyConfig(userId)
+      setSetup(config)
+      setLoading(false)
+      hasLoadedRef.current = true
+    }
+
+    fetchPromiseRef.current = run().finally(() => {
+      fetchPromiseRef.current = null
+    })
+
+    await fetchPromiseRef.current
+  }, [session, isApproved, userId])
 
   useEffect(() => {
     refresh()
@@ -63,11 +82,15 @@ export function StrategyConfigProvider({ children }: { children: ReactNode }) {
 
   const getSetup = useCallback(() => setup, [setup])
 
-  const saveSetup = useCallback(async (next: StrategySetup) => {
-    const err = await saveUserStrategyConfig(next)
-    if (!err) setSetup(next)
-    return err
-  }, [])
+  const saveSetup = useCallback(
+    async (next: StrategySetup) => {
+      if (!userId) return 'You must be signed in.'
+      const err = await saveUserStrategyConfig(userId, next)
+      if (!err) setSetup(next)
+      return err
+    },
+    [userId],
+  )
 
   const value = useMemo(
     () => ({

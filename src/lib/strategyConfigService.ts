@@ -26,19 +26,14 @@ function normalizeRules(rules: TradeRule[] | undefined, fallback: TradeRule[]) {
   }))
 }
 
-export async function fetchUserStrategyConfig(): Promise<StrategySetup> {
+export async function fetchUserStrategyConfig(userId: string): Promise<StrategySetup> {
   const defaults = getDefaultSetup()
-  if (!supabase) return defaults
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return defaults
+  if (!supabase || !userId) return defaults
 
   const { data, error } = await supabase
     .from('user_strategy_configs')
     .select('strategy_names, rules_by_strategy')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .maybeSingle()
 
   if (error || !data) return defaults
@@ -59,17 +54,16 @@ export async function fetchUserStrategyConfig(): Promise<StrategySetup> {
   }
 }
 
-export async function saveUserStrategyConfig(setup: StrategySetup): Promise<string | null> {
+export async function saveUserStrategyConfig(
+  userId: string,
+  setup: StrategySetup,
+): Promise<string | null> {
   if (!supabase) return 'Supabase is not configured.'
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return 'You must be signed in.'
+  if (!userId) return 'You must be signed in.'
 
   const { error } = await supabase.from('user_strategy_configs').upsert(
     {
-      user_id: user.id,
+      user_id: userId,
       strategy_names: setup.names,
       rules_by_strategy: setup.rulesByStrategy,
       updated_at: new Date().toISOString(),

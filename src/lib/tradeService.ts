@@ -1,3 +1,4 @@
+import { invalidateSignedUrl, resolveSignedUrls } from '@/lib/signedUrlCache'
 import { supabase } from '@/lib/supabase'
 import { GOLD_PAIR, type TradeEntry, type TradeImage } from '@/types/trade'
 
@@ -21,6 +22,9 @@ interface DbTradeRow {
   created_at: string
 }
 
+const TRADE_COLUMNS =
+  'id, user_id, date, time, session, direction, risk_percent, lot_size, entry, stop_loss, take_profit, result, strategy, rules_met, rule_labels, image_url, created_at'
+
 function storagePathFromImageUrl(imageUrl: string): string {
   if (imageUrl.includes('/trade-images/')) {
     return imageUrl.split('/trade-images/')[1]?.split('?')[0] ?? imageUrl
@@ -29,16 +33,14 @@ function storagePathFromImageUrl(imageUrl: string): string {
 }
 
 async function resolveTradeImageUrl(imageUrl: string | null): Promise<string | null> {
-  if (!imageUrl || !supabase) return null
+  if (!imageUrl) return null
+  if (imageUrl.startsWith('http') && !imageUrl.includes('/trade-images/')) {
+    return imageUrl
+  }
 
   const path = storagePathFromImageUrl(imageUrl)
-  const { data, error } = await supabase.storage
-    .from('trade-images')
-    .createSignedUrl(path, 60 * 60)
-
-  if (!error && data?.signedUrl) return data.signedUrl
-  if (imageUrl.startsWith('http')) return imageUrl
-  return null
+  const signed = await resolveSignedUrls([path])
+  return signed.get(path) ?? (imageUrl.startsWith('http') ? imageUrl : null)
 }
 
 function rowToTrade(row: DbTradeRow, imagePreviewUrl: string | null): TradeEntry {
@@ -70,31 +72,40 @@ function rowToTrade(row: DbTradeRow, imagePreviewUrl: string | null): TradeEntry
   }
 }
 
-export async function fetchUserTrades(): Promise<{ trades: TradeEntry[]; error: string | null }> {
-  if (!supabase) return { trades: [], error: 'Supabase is not configured.' }
+async function mapRowsToTrades(rows: DbTradeRow[]): Promise<TradeEntry[]> {
+  const imagePaths = rows
+    .map((row) => (row.image_url ? storagePathFromImageUrl(row.image_url) : null))
+    .filter((path): path is string => Boolean(path))
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { trades: [], error: 'You must be signed in.' }
+  const signedUrls = imagePaths.length > 0 ? await resolveSignedUrls(imagePaths) : new Map()
+
+  return rows.map((row) => {
+    if (!row.image_url) return rowToTrade(row, null)
+
+    const path = storagePathFromImageUrl(row.image_url)
+    const previewUrl =
+      signedUrls.get(path) ?? (row.image_url.startsWith('http') ? row.image_url : null)
+
+    return rowToTrade(row, previewUrl)
+  })
+}
+
+export async function fetchUserTrades(
+  userId: string,
+): Promise<{ trades: TradeEntry[]; error: string | null }> {
+  if (!supabase) return { trades: [], error: 'Supabase is not configured.' }
+  if (!userId) return { trades: [], error: 'You must be signed in.' }
 
   const { data, error } = await supabase
     .from('trades')
-    .select('*')
-    .eq('user_id', user.id)
+    .select(TRADE_COLUMNS)
+    .eq('user_id', userId)
     .order('date', { ascending: false })
     .order('time', { ascending: false })
 
   if (error) return { trades: [], error: error.message }
 
-  const rows = data as DbTradeRow[]
-  const trades = await Promise.all(
-    rows.map(async (row) => {
-      const previewUrl = await resolveTradeImageUrl(row.image_url)
-      return rowToTrade(row, previewUrl)
-    }),
-  )
-
+  const trades = await mapRowsToTrades(data as DbTradeRow[])
   return { trades, error: null }
 }
 
@@ -116,32 +127,30 @@ async function uploadTradeImage(
 
   if (error) return null
 
+  invalidateSignedUrl(path)
   return path
 }
 
 export async function createTrade(
+  userId: string,
   trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair' | 'image'>,
   image: TradeImage | null,
 ): Promise<{ trade: TradeEntry | null; error: string | null }> {
   if (!supabase) return { trade: null, error: 'Supabase is not configured.' }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { trade: null, error: 'You must be signed in.' }
+  if (!userId) return { trade: null, error: 'You must be signed in.' }
 
   const tradeId = crypto.randomUUID()
 
   let imageUrl: string | null = null
   if (image) {
-    imageUrl = await uploadTradeImage(user.id, tradeId, image)
+    imageUrl = await uploadTradeImage(userId, tradeId, image)
   }
 
   const { data, error } = await supabase
     .from('trades')
     .insert({
       id: tradeId,
-      user_id: user.id,
+      user_id: userId,
       date: trade.date,
       time: trade.time,
       session: trade.session,
@@ -157,7 +166,7 @@ export async function createTrade(
       rule_labels: trade.ruleLabels ?? {},
       image_url: imageUrl,
     })
-    .select('*')
+    .select(TRADE_COLUMNS)
     .single()
 
   if (error || !data) return { trade: null, error: error?.message ?? 'Failed to save trade.' }
@@ -166,29 +175,22 @@ export async function createTrade(
   return { trade: rowToTrade(data as DbTradeRow, previewUrl), error: null }
 }
 
-export async function removeTrade(tradeId: string): Promise<string | null> {
+export async function removeTrade(userId: string, tradeId: string): Promise<string | null> {
   if (!supabase) return 'Supabase is not configured.'
+  if (!userId) return 'You must be signed in.'
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return 'You must be signed in.'
-
-  const { error } = await supabase.from('trades').delete().eq('id', tradeId).eq('user_id', user.id)
+  const { error } = await supabase.from('trades').delete().eq('id', tradeId).eq('user_id', userId)
   return error?.message ?? null
 }
 
 export async function updateTrade(
+  userId: string,
   tradeId: string,
   trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair' | 'image'>,
   image: TradeImage | null,
 ): Promise<{ trade: TradeEntry | null; error: string | null }> {
   if (!supabase) return { trade: null, error: 'Supabase is not configured.' }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { trade: null, error: 'You must be signed in.' }
+  if (!userId) return { trade: null, error: 'You must be signed in.' }
 
   const updates: Record<string, unknown> = {
     date: trade.date,
@@ -207,7 +209,7 @@ export async function updateTrade(
   }
 
   if (image?.file) {
-    const uploaded = await uploadTradeImage(user.id, tradeId, image)
+    const uploaded = await uploadTradeImage(userId, tradeId, image)
     if (uploaded) updates.image_url = uploaded
   } else if (image === null) {
     updates.image_url = null
@@ -219,8 +221,8 @@ export async function updateTrade(
     .from('trades')
     .update(updates)
     .eq('id', tradeId)
-    .eq('user_id', user.id)
-    .select('*')
+    .eq('user_id', userId)
+    .select(TRADE_COLUMNS)
     .single()
 
   if (error || !data) return { trade: null, error: error?.message ?? 'Failed to update trade.' }

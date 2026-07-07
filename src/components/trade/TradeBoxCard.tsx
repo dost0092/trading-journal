@@ -1,5 +1,5 @@
 import { format, parseISO } from 'date-fns'
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { Check, ImageIcon, Pencil, Trash2, X } from 'lucide-react'
 import { DialogRoot } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -28,7 +28,7 @@ const RESULT_STYLE = {
 }
 
 /** 50/50 box — image left, minimal details right */
-export function TradeBoxCard({ trade, onClick, active }: TradeBoxCardProps) {
+export const TradeBoxCard = memo(function TradeBoxCard({ trade, onClick, active }: TradeBoxCardProps) {
   const { getStrategyName } = useStrategyConfig()
   const strategyName = getStrategyName(trade.strategy)
   const resultLabel =
@@ -54,6 +54,8 @@ export function TradeBoxCard({ trade, onClick, active }: TradeBoxCardProps) {
           <img
             src={trade.image.previewUrl}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover"
           />
         ) : (
@@ -86,7 +88,7 @@ export function TradeBoxCard({ trade, onClick, active }: TradeBoxCardProps) {
       </div>
     </button>
   )
-}
+})
 
 interface TradeDetailModalProps {
   trade: TradeEntry | null
@@ -137,6 +139,8 @@ export function TradeDetailModal({
             <img
               src={trade.image.previewUrl}
               alt="Setup"
+              loading="lazy"
+              decoding="async"
               className="h-full w-full cursor-zoom-in object-cover"
               onDoubleClick={() => setLightboxOpen(true)}
               title="Double-click to enlarge"

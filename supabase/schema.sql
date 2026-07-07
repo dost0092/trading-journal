@@ -267,3 +267,17 @@ create policy "Users update own trade images"
     bucket_id = 'trade-images'
     and auth.uid()::text = (storage.foldername(name))[1]
   );
+
+create index if not exists idx_trades_user_date_time
+  on public.trades (user_id, date desc, time desc);
+
+create index if not exists idx_trades_user_strategy
+  on public.trades (user_id, strategy);
+
+create index if not exists idx_profiles_status
+  on public.profiles (status)
+  where status = 'pending';
+
+create index if not exists idx_profiles_role
+  on public.profiles (role)
+  where role = 'superadmin';

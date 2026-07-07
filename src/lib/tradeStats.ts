@@ -1,28 +1,62 @@
 import { subWeeks, startOfWeek, format, endOfWeek, isWithinInterval } from 'date-fns'
 import type { TradeEntry } from '@/types/trade'
 
+export function buildTradesByDateIndex(trades: TradeEntry[]): Map<string, TradeEntry[]> {
+  const index = new Map<string, TradeEntry[]>()
+
+  for (const trade of trades) {
+    const existing = index.get(trade.date)
+    if (existing) {
+      existing.push(trade)
+    } else {
+      index.set(trade.date, [trade])
+    }
+  }
+
+  return index
+}
+
 export function getTradesForDate(trades: TradeEntry[], dateStr: string) {
   return trades.filter((t) => t.date === dateStr)
+}
+
+export function getTradesForDateFromIndex(
+  index: Map<string, TradeEntry[]>,
+  dateStr: string,
+) {
+  return index.get(dateStr) ?? []
 }
 
 export function getTradeCountForDate(trades: TradeEntry[], dateStr: string) {
   return getTradesForDate(trades, dateStr).length
 }
 
+export function getTradeCountForDateFromIndex(
+  index: Map<string, TradeEntry[]>,
+  dateStr: string,
+) {
+  return index.get(dateStr)?.length ?? 0
+}
+
 export function calcStats(trades: TradeEntry[]) {
-  const wins = trades.filter((t) => t.result === 'win')
-  const losses = trades.filter((t) => t.result === 'loss')
-  const winRate =
-    trades.length > 0 ? Math.round((wins.length / trades.length) * 100) : 0
-  const lossRate =
-    trades.length > 0 ? Math.round((losses.length / trades.length) * 100) : 0
+  let wins = 0
+  let losses = 0
+
+  for (const trade of trades) {
+    if (trade.result === 'win') wins += 1
+    else if (trade.result === 'loss') losses += 1
+  }
+
+  const total = trades.length
+  const winRate = total > 0 ? Math.round((wins / total) * 100) : 0
+  const lossRate = total > 0 ? Math.round((losses / total) * 100) : 0
 
   return {
-    totalTrades: trades.length,
+    totalTrades: total,
     winRate,
     lossRate,
-    wins: wins.length,
-    losses: losses.length,
+    wins,
+    losses,
   }
 }
 

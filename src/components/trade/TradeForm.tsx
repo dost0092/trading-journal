@@ -18,7 +18,7 @@ import {
   type TradeFormSchema,
 } from '@/lib/tradeSchema'
 import { GOLD_PAIR } from '@/types/trade'
-import type { TradeImage } from '@/types/trade'
+import type { StrategyId, TradeImage } from '@/types/trade'
 import { cn } from '@/lib/utils'
 import { STRATEGY_IDS } from '@/data/strategies'
 
@@ -55,9 +55,11 @@ export function TradeForm({
   initialValues,
   submitLabel = 'Save Trade',
 }: TradeFormProps) {
-  const { getStrategyName, getRules, refresh } = useStrategyConfig()
+  const { getStrategyName, getRules, getSetup, saveSetup, refresh } = useStrategyConfig()
   const [editorOpen, setEditorOpen] = useState(false)
   const [skipInitialRuleSync, setSkipInitialRuleSync] = useState(Boolean(initialValues))
+  const [editingStrategyId, setEditingStrategyId] = useState<StrategyId | null>(null)
+  const [strategyDraft, setStrategyDraft] = useState('')
   const resolvedDefaults = buildFormDefaults(initialValues)
   const initialRuleLabels = Object.entries(resolvedDefaults.ruleLabels)
   const initialRules =
@@ -118,6 +120,47 @@ export function TradeForm({
     setValue('rulesMet', buildRulesMet(savedRules, values.rulesMet))
   }
 
+  async function persistSetup(next: StrategySetup) {
+    await saveSetup(next)
+  }
+
+  function commitStrategyName(strategyId: StrategyId) {
+    const trimmed = strategyDraft.trim()
+    setEditingStrategyId(null)
+    setStrategyDraft('')
+    if (!trimmed || trimmed === getStrategyName(strategyId)) return
+
+    const setup = getSetup()
+    void persistSetup({
+      ...setup,
+      names: { ...setup.names, [strategyId]: trimmed },
+    })
+  }
+
+  function startEditingStrategy(strategyId: StrategyId) {
+    setEditingStrategyId(strategyId)
+    setStrategyDraft(getStrategyName(strategyId))
+  }
+
+  async function handleRuleLabelChange(ruleId: string, label: string) {
+    const updatedRules = rules.map((rule) =>
+      rule.id === ruleId ? { ...rule, label } : rule,
+    )
+    setRules(updatedRules)
+    setValue('ruleLabels', { ...values.ruleLabels, [ruleId]: label })
+
+    const setup = getSetup()
+    await persistSetup({
+      ...setup,
+      rulesByStrategy: {
+        ...setup.rulesByStrategy,
+        [values.strategy]: setup.rulesByStrategy[values.strategy].map((rule) =>
+          rule.id === ruleId ? { ...rule, label } : rule,
+        ),
+      },
+    })
+  }
+
   return (
     <>
       <form
@@ -137,6 +180,7 @@ export function TradeForm({
               Edit strategy & rules
             </Button>
           </div>
+          <p className="text-[11px] text-muted">Double-click a strategy name to edit it.</p>
           <div className="grid gap-3 sm:grid-cols-2">
             {STRATEGY_IDS.map((id) => (
               <button
@@ -150,7 +194,38 @@ export function TradeForm({
                     : 'border-border bg-card hover:border-primary/25',
                 )}
               >
-                <p className="text-base font-semibold tracking-tight">{getStrategyName(id)}</p>
+                {editingStrategyId === id ? (
+                  <Input
+                    autoFocus
+                    value={strategyDraft}
+                    onChange={(e) => setStrategyDraft(e.target.value)}
+                    onBlur={() => commitStrategyName(id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        commitStrategyName(id)
+                      }
+                      if (e.key === 'Escape') {
+                        setEditingStrategyId(null)
+                        setStrategyDraft('')
+                      }
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={(e) => e.stopPropagation()}
+                    className="h-9 text-base font-semibold"
+                  />
+                ) : (
+                  <p
+                    className="text-base font-semibold tracking-tight"
+                    onDoubleClick={(e) => {
+                      e.stopPropagation()
+                      startEditingStrategy(id)
+                    }}
+                    title="Double-click to edit"
+                  >
+                    {getStrategyName(id)}
+                  </p>
+                )}
               </button>
             ))}
           </div>
@@ -164,12 +239,14 @@ export function TradeForm({
         >
           <p className="text-xs font-medium uppercase tracking-wider text-muted">Rules</p>
           <p className="text-[11px] text-muted">
-            Tick each rule you followed on this trade. Use Edit to change rule text.
+            Tick each rule you followed on this trade. Double-click a rule to edit its text.
           </p>
           <CheckboxGroup
             criteria={rules}
             values={values.rulesMet}
             onChange={handleRuleChange}
+            editableLabels
+            onLabelChange={handleRuleLabelChange}
           />
         </motion.div>
 
