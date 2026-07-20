@@ -222,6 +222,15 @@ export function TradeDetailModal({
         ))}
       </dl>
 
+      {trade.remark && (
+        <div className="mt-5 space-y-2 border-t border-border pt-4">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-muted">Trade Remark</p>
+          <p className="whitespace-pre-wrap break-words rounded-lg bg-secondary/40 px-3 py-2.5 text-sm">
+            {trade.remark}
+          </p>
+        </div>
+      )}
+
       {(onEdit || onDelete) && (
         <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
           {onEdit && (

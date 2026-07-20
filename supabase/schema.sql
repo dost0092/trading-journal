@@ -192,6 +192,7 @@ create table if not exists public.trades (
   strategy text not null,
   rules_met jsonb not null default '[]',
   rule_labels jsonb not null default '{}',
+  remark text,
   image_url text,
   created_at timestamptz not null default now()
 );

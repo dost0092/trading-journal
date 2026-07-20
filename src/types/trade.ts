@@ -35,6 +35,8 @@ export interface TradeEntry {
   rulesMet: string[]
   /** Custom rule text saved with the trade */
   ruleLabels?: Record<string, string>
+  /** Free-form journal notes (emotions, psychology, lessons learned) */
+  remark?: string
   image: TradeImage | null
   createdAt: string
 }

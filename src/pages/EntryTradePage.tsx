@@ -36,6 +36,7 @@ export function EntryTradePage() {
           .filter(([, v]) => v)
           .map(([k]) => k),
         ruleLabels: data.ruleLabels,
+        remark: data.remark,
       },
       img,
     )

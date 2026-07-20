@@ -18,6 +18,7 @@ interface DbTradeRow {
   strategy: string
   rules_met: string[]
   rule_labels: Record<string, string> | null
+  remark: string | null
   image_url: string | null
   created_at: string
 }
@@ -61,6 +62,7 @@ function rowToTrade(row: DbTradeRow, imagePreviewUrl: string | null): TradeEntry
     strategy: row.strategy as TradeEntry['strategy'],
     rulesMet: Array.isArray(row.rules_met) ? row.rules_met : [],
     ruleLabels: row.rule_labels ?? undefined,
+    remark: row.remark ?? undefined,
     image: imagePreviewUrl
       ? {
           id: row.id,

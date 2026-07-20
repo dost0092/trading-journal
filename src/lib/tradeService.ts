@@ -18,12 +18,13 @@ interface DbTradeRow {
   strategy: string
   rules_met: string[]
   rule_labels: Record<string, string> | null
+  remark: string | null
   image_url: string | null
   created_at: string
 }
 
 const TRADE_COLUMNS =
-  'id, user_id, date, time, session, direction, risk_percent, lot_size, entry, stop_loss, take_profit, result, strategy, rules_met, rule_labels, image_url, created_at'
+  'id, user_id, date, time, session, direction, risk_percent, lot_size, entry, stop_loss, take_profit, result, strategy, rules_met, rule_labels, remark, image_url, created_at'
 
 function storagePathFromImageUrl(imageUrl: string): string {
   if (imageUrl.includes('/trade-images/')) {
@@ -60,6 +61,7 @@ function rowToTrade(row: DbTradeRow, imagePreviewUrl: string | null): TradeEntry
     strategy: row.strategy as TradeEntry['strategy'],
     rulesMet: Array.isArray(row.rules_met) ? row.rules_met : [],
     ruleLabels: row.rule_labels ?? undefined,
+    remark: row.remark ?? undefined,
     image: imagePreviewUrl
       ? {
           id: row.id,
@@ -164,6 +166,7 @@ export async function createTrade(
       strategy: trade.strategy,
       rules_met: trade.rulesMet,
       rule_labels: trade.ruleLabels ?? {},
+      remark: trade.remark || null,
       image_url: imageUrl,
     })
     .select(TRADE_COLUMNS)
@@ -206,6 +209,7 @@ export async function updateTrade(
     strategy: trade.strategy,
     rules_met: trade.rulesMet,
     rule_labels: trade.ruleLabels ?? {},
+    remark: trade.remark || null,
   }
 
   if (image?.file) {

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
 import { PencilLine } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label, Select } from '@/components/ui/input'
+import { Input, Label, Select, Textarea } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { CheckboxGroup } from '@/components/trade/CheckboxGroup'
 import { StrategyRulesEditor } from '@/components/trade/StrategyRulesEditor'
@@ -380,6 +380,20 @@ export function TradeForm({
         <div className="space-y-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted">Screenshot</p>
           <ImageUpload image={image} onChange={onImageChange} />
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted">Trade Remark</p>
+          <p className="text-[11px] text-muted">
+            Journal your emotions, reasoning, confidence, mistakes, and lessons learned. Optional.
+          </p>
+          <Textarea
+            id="remark"
+            rows={6}
+            placeholder="Write anything about this trade — how you felt before entering, why you took it, what you learned..."
+            className="min-h-[140px] resize-y"
+            {...form.register('remark')}
+          />
         </div>
 
         <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={saving}>

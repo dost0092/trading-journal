@@ -21,5 +21,6 @@ export function tradeToFormValues(trade: TradeEntry): TradeFormSchema {
     strategy: trade.strategy,
     rulesMet,
     ruleLabels: trade.ruleLabels ?? {},
+    remark: trade.remark ?? '',
   }
 }
