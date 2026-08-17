@@ -21,6 +21,7 @@ export function EntryTradePage() {
     setError(null)
     const err = await addTrade(
       {
+        pair: data.pair,
         date: data.date,
         time: data.time,
         session: data.session,
@@ -53,7 +54,7 @@ export function EntryTradePage() {
     <div className="mx-auto max-w-2xl space-y-8 py-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted">XAU/USD · Gold only</p>
+          <p className="text-sm text-muted">Add any instrument you trade</p>
         </div>
         {!showForm && (
           <Button size="lg" onClick={() => setShowForm(true)}>

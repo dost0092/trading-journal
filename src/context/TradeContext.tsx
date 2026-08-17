@@ -24,13 +24,13 @@ interface TradeContextValue {
   strategyFilter: StrategyFilter
   setStrategyFilter: (f: StrategyFilter) => void
   addTrade: (
-    trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair' | 'image'>,
+    trade: Omit<TradeEntry, 'id' | 'createdAt' | 'image'>,
     image: TradeImage | null,
   ) => Promise<string | null>
   deleteTrade: (id: string) => Promise<string | null>
   updateTrade: (
     id: string,
-    trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair' | 'image'>,
+    trade: Omit<TradeEntry, 'id' | 'createdAt' | 'image'>,
     image: TradeImage | null,
   ) => Promise<string | null>
   refreshTrades: () => Promise<void>
@@ -90,7 +90,7 @@ export function TradeProvider({ children }: { children: ReactNode }) {
 
   const addTrade = useCallback(
     async (
-      trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair' | 'image'>,
+      trade: Omit<TradeEntry, 'id' | 'createdAt' | 'image'>,
       image: TradeImage | null,
     ) => {
       if (!userId) return 'You must be signed in.'
@@ -116,7 +116,7 @@ export function TradeProvider({ children }: { children: ReactNode }) {
   const updateTrade = useCallback(
     async (
       id: string,
-      trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair' | 'image'>,
+      trade: Omit<TradeEntry, 'id' | 'createdAt' | 'image'>,
       image: TradeImage | null,
     ) => {
       if (!userId) return 'You must be signed in.'

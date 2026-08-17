@@ -7,6 +7,7 @@ interface DbTradeRow {
   user_id: string
   date: string
   time: string
+  pair: string | null
   session: string
   direction: string
   risk_percent: number
@@ -50,7 +51,7 @@ function rowToTrade(row: DbTradeRow, imagePreviewUrl: string | null): TradeEntry
     id: row.id,
     date: row.date,
     time: row.time,
-    pair: GOLD_PAIR,
+    pair: row.pair || GOLD_PAIR,
     session: row.session as TradeEntry['session'],
     direction: row.direction as TradeEntry['direction'],
     riskPercent: Number(row.risk_percent),

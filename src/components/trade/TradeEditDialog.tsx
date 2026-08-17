@@ -30,6 +30,7 @@ export function TradeEditDialog({ trade, onClose, onSaved }: TradeEditDialogProp
     const err = await updateTrade(
       trade.id,
       {
+        pair: data.pair,
         date: data.date,
         time: data.time,
         session: data.session,

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { GOLD_PAIR } from '@/types/trade'
 
 export const tradeFormSchema = z.object({
+  pair: z.string().trim().min(1, 'Instrument is required'),
   date: z.string().min(1),
   time: z.string().min(1),
   session: z.enum(['london', 'new_york', 'asia', 'overlap']),
@@ -21,6 +22,7 @@ export const tradeFormSchema = z.object({
 export type TradeFormSchema = z.infer<typeof tradeFormSchema>
 
 export const defaultTradeFormValues: TradeFormSchema = {
+  pair: GOLD_PAIR,
   date: new Date().toISOString().split('T')[0],
   time: new Date().toTimeString().slice(0, 5),
   session: 'london',

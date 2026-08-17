@@ -8,6 +8,7 @@ export function tradeToFormValues(trade: TradeEntry): TradeFormSchema {
   )
 
   return {
+    pair: trade.pair,
     date: trade.date,
     time: trade.time,
     session: trade.session,

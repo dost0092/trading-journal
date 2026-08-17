@@ -7,6 +7,7 @@ interface DbTradeRow {
   user_id: string
   date: string
   time: string
+  pair: string | null
   session: string
   direction: string
   risk_percent: number
@@ -24,7 +25,7 @@ interface DbTradeRow {
 }
 
 const TRADE_COLUMNS =
-  'id, user_id, date, time, session, direction, risk_percent, lot_size, entry, stop_loss, take_profit, result, strategy, rules_met, rule_labels, remark, image_url, created_at'
+  'id, user_id, date, time, pair, session, direction, risk_percent, lot_size, entry, stop_loss, take_profit, result, strategy, rules_met, rule_labels, remark, image_url, created_at'
 
 function storagePathFromImageUrl(imageUrl: string): string {
   if (imageUrl.includes('/trade-images/')) {
@@ -49,7 +50,7 @@ function rowToTrade(row: DbTradeRow, imagePreviewUrl: string | null): TradeEntry
     id: row.id,
     date: row.date,
     time: row.time,
-    pair: GOLD_PAIR,
+    pair: row.pair || GOLD_PAIR,
     session: row.session as TradeEntry['session'],
     direction: row.direction as TradeEntry['direction'],
     riskPercent: Number(row.risk_percent),
@@ -135,7 +136,7 @@ async function uploadTradeImage(
 
 export async function createTrade(
   userId: string,
-  trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair' | 'image'>,
+  trade: Omit<TradeEntry, 'id' | 'createdAt' | 'image'>,
   image: TradeImage | null,
 ): Promise<{ trade: TradeEntry | null; error: string | null }> {
   if (!supabase) return { trade: null, error: 'Supabase is not configured.' }
@@ -155,6 +156,7 @@ export async function createTrade(
       user_id: userId,
       date: trade.date,
       time: trade.time,
+      pair: trade.pair,
       session: trade.session,
       direction: trade.direction,
       risk_percent: trade.riskPercent,
@@ -189,7 +191,7 @@ export async function removeTrade(userId: string, tradeId: string): Promise<stri
 export async function updateTrade(
   userId: string,
   tradeId: string,
-  trade: Omit<TradeEntry, 'id' | 'createdAt' | 'pair' | 'image'>,
+  trade: Omit<TradeEntry, 'id' | 'createdAt' | 'image'>,
   image: TradeImage | null,
 ): Promise<{ trade: TradeEntry | null; error: string | null }> {
   if (!supabase) return { trade: null, error: 'Supabase is not configured.' }
@@ -198,6 +200,7 @@ export async function updateTrade(
   const updates: Record<string, unknown> = {
     date: trade.date,
     time: trade.time,
+    pair: trade.pair,
     session: trade.session,
     direction: trade.direction,
     risk_percent: trade.riskPercent,

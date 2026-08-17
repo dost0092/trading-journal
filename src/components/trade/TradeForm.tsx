@@ -17,7 +17,6 @@ import {
   defaultTradeFormValues,
   type TradeFormSchema,
 } from '@/lib/tradeSchema'
-import { GOLD_PAIR } from '@/types/trade'
 import type { StrategyId, TradeImage } from '@/types/trade'
 import { cn } from '@/lib/utils'
 import { STRATEGY_IDS } from '@/data/strategies'
@@ -252,9 +251,15 @@ export function TradeForm({
 
         <Card className="border-border/80 shadow-none">
           <CardContent className="space-y-6 p-6 pt-6">
-            <div className="flex items-center justify-between border-b border-border pb-4">
-              <p className="text-sm font-medium text-muted">Instrument</p>
-              <p className="text-sm font-semibold">{GOLD_PAIR}</p>
+            <div className="border-b border-border pb-4">
+              <Label htmlFor="pair">Instrument</Label>
+              <Input
+                id="pair"
+                type="text"
+                placeholder="e.g. XAU/USD, BTC/USD"
+                className="mt-1.5"
+                {...form.register('pair')}
+              />
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
